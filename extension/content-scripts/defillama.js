@@ -250,17 +250,29 @@
   }
 
   // Main entry point
-  async function startScraping(useApi = false, chainOverride = null) {
-    const chain = chainOverride || getCurrentChain();
+  async function startScraping(chainOverride = null) {
+    const urlChain = getCurrentChain();
+    const hasNextData = !!document.getElementById('__NEXT_DATA__');
 
-    if (useApi || !chain) {
-      // Use API directly (works anywhere on DefiLlama)
-      console.log('[Ecosystem Scraper] Using DefiLlama API' + (chainOverride ? ` (chain override: ${chainOverride})` : ''));
-      return scrapeFromApi(chain);
-    } else {
-      // Use __NEXT_DATA__ for chain pages (faster, but less data)
-      console.log('[Ecosystem Scraper] Using __NEXT_DATA__ + API enrichment');
+    // Prefer __NEXT_DATA__ when on a chain page — it reflects exactly
+    // what DefiLlama's UI shows. Fall back to API when:
+    //   - Not on a chain page (no URL chain detected)
+    //   - Chain override doesn't match the URL chain (user picked a
+    //     different chain in the dropdown than what the page shows)
+    //   - __NEXT_DATA__ is missing for some reason
+    const usePageData = urlChain && hasNextData &&
+      (!chainOverride || chainOverride.toLowerCase() === urlChain.toLowerCase());
+
+    if (usePageData) {
+      console.log(`[Ecosystem Scraper] Using __NEXT_DATA__ for ${urlChain} (matches page content) + API enrichment`);
       return scrapeFromNextData();
+    } else {
+      const chain = chainOverride || urlChain;
+      console.log(`[Ecosystem Scraper] Using DefiLlama API` +
+        (chain ? ` (filtering for ${chain})` : ' (all chains)') +
+        (chainOverride && urlChain && chainOverride.toLowerCase() !== urlChain.toLowerCase()
+          ? ` — override differs from URL chain "${urlChain}"` : ''));
+      return scrapeFromApi(chain);
     }
   }
 
@@ -270,8 +282,7 @@
       if (!isScanning) {
         // Accept optional chain override from popup
         const chainOverride = message.chain ? message.chain.name : null;
-        // Default to API mode for better data
-        startScraping(true, chainOverride);
+        startScraping(chainOverride);
         sendResponse({ success: true });
       } else {
         sendResponse({ success: false, error: 'Already scanning' });
