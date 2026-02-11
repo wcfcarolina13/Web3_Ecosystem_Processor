@@ -164,6 +164,93 @@ query GetAssetTypes {
 }
 """
 
+# Get root with full product→asset support details (for gap analysis)
+GET_ROOT_WITH_SUPPORT_QUERY = """
+query GetRootWithSupport($slug: String!) {
+  roots(where: { slug: { _eq: $slug } }, limit: 1) {
+    id
+    slug
+    urlMain
+    profileInfos {
+      id
+      name
+      profileType { name }
+      profileStatus { name }
+    }
+    products {
+      id
+      name
+      productType { name }
+      productStatus { name }
+      isMainProduct
+      productAssetRelationships {
+        asset { id name ticker }
+        assetSupportType { id name slug }
+      }
+    }
+  }
+}
+"""
+
+# Search roots by name (returns profiles + products + asset support)
+SEARCH_ROOTS_BY_NAME_QUERY = """
+query SearchRootsByName($search: String!, $limit: Int) {
+  profileInfos(
+    where: { name: { _contains: $search } }
+    limit: $limit
+  ) {
+    id
+    name
+    profileType { name }
+    profileStatus { name }
+    root {
+      id
+      slug
+      urlMain
+      products {
+        id
+        name
+        productType { name }
+        productStatus { name }
+        isMainProduct
+        productAssetRelationships {
+          asset { id name ticker }
+          assetSupportType { id name slug }
+        }
+      }
+    }
+  }
+}
+"""
+
+# Search roots by URL (returns profiles + products + asset support)
+SEARCH_ROOTS_BY_URL_WITH_SUPPORT_QUERY = """
+query SearchRootsByURL($url: String!) {
+  roots(where: { urlMain: { _contains: $url } }, limit: 5) {
+    id
+    slug
+    urlMain
+    profileInfos {
+      id
+      name
+      profileType { name }
+      profileStatus { name }
+    }
+    products {
+      id
+      name
+      productType { name }
+      productStatus { name }
+      isMainProduct
+      productAssetRelationships {
+        asset { id name ticker }
+        assetSupportType { id name slug }
+      }
+    }
+  }
+}
+"""
+
 # Raw query for advanced use
 INTROSPECTION_QUERY = """
 query IntrospectionQuery {

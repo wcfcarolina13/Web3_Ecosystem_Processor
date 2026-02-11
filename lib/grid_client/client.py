@@ -21,6 +21,9 @@ from .queries import (
     SEARCH_BY_URL_QUERY,
     GET_PRODUCT_TYPES_QUERY,
     GET_ASSET_TYPES_QUERY,
+    GET_ROOT_WITH_SUPPORT_QUERY,
+    SEARCH_ROOTS_BY_NAME_QUERY,
+    SEARCH_ROOTS_BY_URL_WITH_SUPPORT_QUERY,
     INTROSPECTION_QUERY,
 )
 
@@ -168,6 +171,40 @@ class GridAPIClient:
         data = self._execute_query(GET_PROFILE_DETAILS_QUERY, {"name": name})
         profiles = data.get("profileInfos", [])
         return profiles[0] if profiles else {}
+
+    # ── Asset Support Queries ─────────────────────────────────────
+
+    def search_with_support_by_name(self, name: str, limit: int = 5) -> List[Dict]:
+        """
+        Search for profiles by name, returning full product→asset support data.
+        Returns list of profileInfos with nested root.products.productAssetRelationships.
+        """
+        data = self._execute_query(
+            SEARCH_ROOTS_BY_NAME_QUERY, {"search": name, "limit": limit}
+        )
+        return data.get("profileInfos", [])
+
+    def search_with_support_by_url(self, url: str) -> List[Dict]:
+        """
+        Search roots by URL, returning full product→asset support data.
+        Returns list of roots with products.productAssetRelationships.
+        """
+        clean_url = url.replace("https://", "").replace("http://", "").replace("www.", "")
+        clean_url = clean_url.rstrip("/")
+        data = self._execute_query(
+            SEARCH_ROOTS_BY_URL_WITH_SUPPORT_QUERY, {"url": clean_url}
+        )
+        return data.get("roots", [])
+
+    def get_root_with_support(self, slug: str) -> Dict:
+        """
+        Get a root by slug with all products and their asset support relationships.
+        """
+        data = self._execute_query(
+            GET_ROOT_WITH_SUPPORT_QUERY, {"slug": slug}
+        )
+        roots = data.get("roots", [])
+        return roots[0] if roots else {}
 
     # ── Reference Data ────────────────────────────────────────────
 
