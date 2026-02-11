@@ -21,6 +21,25 @@
           "url": "https://www.aptofolio.com"
         }
       }
+    },
+    {
+      "id": "avalanche",
+      "name": "Avalanche",
+      "target_assets": ["USDT", "USDC", "AVAX"],
+      "sources": {
+        "defillama": {
+          "chain_slug": "Avalanche",
+          "url": "https://defillama.com/chain/Avalanche"
+        },
+        "dappradar": {
+          "protocol_slug": "avalanche",
+          "url": "https://dappradar.com/rankings/protocol/avalanche"
+        },
+        "coingecko": {
+          "category_slug": "avalanche-ecosystem",
+          "url": "https://www.coingecko.com/en/categories/avalanche-ecosystem"
+        }
+      }
     }
   ],
   "_comment": "Add new chains by appending to the chains array. Not all sources are required per chain.",
