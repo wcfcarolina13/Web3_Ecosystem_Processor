@@ -1,0 +1,290 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Ecosystem Scraper</title>
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      width: 360px;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: #1a1a2e;
+      color: #eee;
+      padding: 16px;
+    }
+
+    h1 {
+      font-size: 18px;
+      margin-bottom: 12px;
+      color: #a855f7;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    h1 span {
+      font-size: 20px;
+    }
+
+    .status-bar {
+      background: #16213e;
+      border-radius: 8px;
+      padding: 12px;
+      margin-bottom: 16px;
+    }
+
+    .status-bar .site {
+      font-size: 12px;
+      color: #888;
+      margin-bottom: 4px;
+    }
+
+    .status-bar .site-name {
+      font-weight: 600;
+      color: #a855f7;
+    }
+
+    .status-bar .count {
+      font-size: 24px;
+      font-weight: 700;
+    }
+
+    .status-bar .label {
+      font-size: 12px;
+      color: #888;
+    }
+
+    .progress-container {
+      margin-top: 12px;
+      display: none;
+    }
+
+    .progress-container.active {
+      display: block;
+    }
+
+    .progress-bar {
+      height: 6px;
+      background: #16213e;
+      border-radius: 3px;
+      overflow: hidden;
+    }
+
+    .progress-bar .fill {
+      height: 100%;
+      background: linear-gradient(90deg, #a855f7, #6366f1);
+      width: 0%;
+      transition: width 0.3s ease;
+    }
+
+    .progress-text {
+      font-size: 11px;
+      color: #888;
+      margin-top: 6px;
+      text-align: center;
+    }
+
+    .btn-group {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 16px;
+    }
+
+    button {
+      flex: 1;
+      padding: 12px 16px;
+      border: none;
+      border-radius: 8px;
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    button:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+
+    .btn-primary {
+      background: linear-gradient(135deg, #a855f7, #6366f1);
+      color: white;
+    }
+
+    .btn-primary:hover:not(:disabled) {
+      transform: translateY(-1px);
+      box-shadow: 0 4px 12px rgba(168, 85, 247, 0.4);
+    }
+
+    .btn-secondary {
+      background: #16213e;
+      color: #eee;
+      border: 1px solid #333;
+    }
+
+    .btn-secondary:hover:not(:disabled) {
+      background: #1f2937;
+    }
+
+    .btn-danger {
+      background: #dc2626;
+      color: white;
+    }
+
+    .output-section {
+      background: #16213e;
+      border-radius: 8px;
+      padding: 12px;
+    }
+
+    .output-section h3 {
+      font-size: 12px;
+      color: #888;
+      margin-bottom: 8px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .output-options {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .output-btn {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 10px 12px;
+      background: #1a1a2e;
+      border: 1px solid #333;
+      border-radius: 6px;
+      color: #eee;
+      font-size: 13px;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .output-btn:hover {
+      border-color: #a855f7;
+      background: #1f1f3a;
+    }
+
+    .output-btn svg {
+      width: 18px;
+      height: 18px;
+      fill: currentColor;
+    }
+
+    .toast {
+      position: fixed;
+      bottom: 16px;
+      left: 16px;
+      right: 16px;
+      background: #22c55e;
+      color: white;
+      padding: 12px;
+      border-radius: 8px;
+      font-size: 13px;
+      text-align: center;
+      transform: translateY(100px);
+      opacity: 0;
+      transition: all 0.3s;
+    }
+
+    .toast.show {
+      transform: translateY(0);
+      opacity: 1;
+    }
+
+    .toast.error {
+      background: #dc2626;
+    }
+
+    .unsupported {
+      text-align: center;
+      padding: 20px;
+    }
+
+    .unsupported p {
+      color: #888;
+      font-size: 13px;
+      margin-bottom: 12px;
+    }
+
+    .supported-sites {
+      font-size: 12px;
+      color: #666;
+    }
+
+    .supported-sites span {
+      display: inline-block;
+      background: #16213e;
+      padding: 4px 8px;
+      border-radius: 4px;
+      margin: 2px;
+    }
+  </style>
+</head>
+<body>
+  <h1><span>🔍</span> Ecosystem Scraper</h1>
+
+  <div id="main-content">
+    <div class="status-bar">
+      <div class="site">Current site: <span class="site-name" id="site-name">-</span></div>
+      <div class="count" id="project-count">0</div>
+      <div class="label">projects found</div>
+
+      <div class="progress-container" id="progress-container">
+        <div class="progress-bar">
+          <div class="fill" id="progress-fill"></div>
+        </div>
+        <div class="progress-text" id="progress-text">Scanning...</div>
+      </div>
+    </div>
+
+    <div class="btn-group">
+      <button class="btn-primary" id="start-btn">Start Scraping</button>
+      <button class="btn-danger" id="stop-btn" style="display:none;">Stop</button>
+    </div>
+
+    <div class="output-section">
+      <h3>Export Data</h3>
+      <div class="output-options">
+        <button class="output-btn" id="copy-csv-btn" disabled>
+          <svg viewBox="0 0 24 24"><path d="M16 1H4c-1.1 0-2 .9-2 2v14h2V3h12V1zm3 4H8c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h11c1.1 0 2-.9 2-2V7c0-1.1-.9-2-2-2zm0 16H8V7h11v14z"/></svg>
+          Copy as CSV
+        </button>
+        <button class="output-btn" id="download-csv-btn" disabled>
+          <svg viewBox="0 0 24 24"><path d="M19 9h-4V3H9v6H5l7 7 7-7zM5 18v2h14v-2H5z"/></svg>
+          Download CSV
+        </button>
+        <button class="output-btn" id="copy-json-btn" disabled>
+          <svg viewBox="0 0 24 24"><path d="M8 3a2 2 0 0 0-2 2v4a2 2 0 0 1-2 2H3v2h1a2 2 0 0 1 2 2v4a2 2 0 0 0 2 2h2v-2H8v-5a2 2 0 0 0-2-2 2 2 0 0 0 2-2V5h2V3H8zm8 0a2 2 0 0 1 2 2v4a2 2 0 0 0 2 2h1v2h-1a2 2 0 0 0-2 2v4a2 2 0 0 1-2 2h-2v-2h2v-5a2 2 0 0 1 2-2 2 2 0 0 1-2-2V5h-2V3h2z"/></svg>
+          Copy as JSON
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <div id="unsupported-content" class="unsupported" style="display:none;">
+    <p>This site is not supported yet.</p>
+    <p>Navigate to a supported ecosystem directory:</p>
+    <div class="supported-sites">
+      <span>aptofolio.com</span>
+      <span>defillama.com</span>
+      <span>dappradar.com</span>
+    </div>
+  </div>
+
+  <div class="toast" id="toast"></div>
+
+  <script src="popup.js"></script>
+</body>
+</html>

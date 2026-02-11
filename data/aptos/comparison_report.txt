@@ -1,0 +1,254 @@
+============================================================
+ECOSYSTEM DATA COMPARISON REPORT
+============================================================
+
+Existing CSV entries: 118
+DefiLlama Aptos protocols: 46
+Duplicates found: 26
+New projects to add: 20
+
+------------------------------------------------------------
+DUPLICATES (may need data enhancement)
+------------------------------------------------------------
+  DefiLlama: Binance CEX
+  CSV:      Binance (match: 100%)
+  URL: https://www.binance.com
+  Twitter: @binance
+  TVL: $175,787,171,836
+
+  DefiLlama: OKX
+  CSV:      OKX (match: 100%)
+  URL: https://www.okx.com
+  Twitter: @okx
+  TVL: $23,427,519,504
+
+  DefiLlama: Bitfinex
+  CSV:      Bitfinex (match: 100%)
+  URL: https://www.bitfinex.com
+  Twitter: @bitfinex
+  TVL: $20,839,862,915
+
+  DefiLlama: Bybit
+  CSV:      Bybit (match: 100%)
+  URL: https://www.bybit.com
+  Twitter: @bybit_official
+  TVL: $17,668,168,251
+
+  DefiLlama: Gate
+  CSV:      Stargate Finance (match: 90%)
+  URL: https://www.gate.io
+  Twitter: @gate_io
+  TVL: $6,200,000,000
+
+  DefiLlama: BlackRock BUIDL
+  CSV:      BlackRock BUIDL (match: 100%)
+  URL: https://www.blackrock.com
+  Twitter: @BlackRock
+  TVL: $2,200,000,000
+
+  DefiLlama: PancakeSwap AMM
+  CSV:      PancakeSwap (match: 100%)
+  URL: https://pancakeswap.finance
+  Twitter: @PancakeSwap
+  TVL: $1,400,000,000
+
+  DefiLlama: Echo Lending
+  CSV:      Echo Protocol (match: 90%)
+  URL: https://echo.xyz
+  Twitter: @Echo_Protocol
+  TVL: $193,000,000
+
+  DefiLlama: Echelon Market
+  CSV:      Echelon (match: 100%)
+  URL: https://echelon.market
+  Twitter: @EchelonMarket
+  TVL: $96,000,000
+
+  DefiLlama: Aave Aptos
+  CSV:      Aave (match: 100%)
+  URL: https://aptos.aave.com
+  Twitter: @aave
+  TVL: $57,000,000
+
+  DefiLlama: Hyperion
+  CSV:      Hyperion (match: 100%)
+  URL: https://hyperion.xyz
+  Twitter: @hyperaboringion_xyz
+  TVL: $56,000,000
+
+  DefiLlama: Amnis Finance
+  CSV:      Amnis Finance (match: 100%)
+  URL: https://amnis.finance
+  Twitter: @AmnisFinance
+  TVL: $45,000,000
+
+  DefiLlama: Thala LSD
+  CSV:      Thala Labs (match: 100%)
+  URL: https://thalalabs.xyz
+  Twitter: @ThalaLabs
+  TVL: $42,000,000
+
+  DefiLlama: Aries Markets
+  CSV:      Aries Markets (match: 100%)
+  URL: https://ariesmarkets.xyz
+  Twitter: @AriesMarkets
+  TVL: $40,000,000
+
+  DefiLlama: Aptin Finance V2
+  CSV:      Aptin Finance (match: 90%)
+  URL: https://aptin.io
+  Twitter: @AptinLabs
+  TVL: $35,000,000
+
+  DefiLlama: ThalaSwap
+  CSV:      Thala Labs (match: 90%)
+  URL: https://thalalabs.xyz
+  Twitter: @ThalaLabs
+  TVL: $32,000,000
+
+  DefiLlama: Merkle Trade
+  CSV:      Merkle Trade (match: 100%)
+  URL: https://merkle.trade
+  Twitter: @MerkleTrade
+  TVL: $28,000,000
+
+  DefiLlama: Cellana Finance
+  CSV:      Cellana Finance (match: 100%)
+  URL: https://cellana.finance
+  Twitter: @CellanaFinance
+  TVL: $25,000,000
+
+  DefiLlama: Liquidswap
+  CSV:      Liquidswap (match: 100%)
+  URL: https://liquidswap.com
+  Twitter: @PontemNetwork
+  TVL: $22,000,000
+
+  DefiLlama: Meso Finance
+  CSV:      Meso Finance (match: 100%)
+  URL: https://mesofinance.xyz
+  Twitter: @MesoFinance
+  TVL: $18,000,000
+
+------------------------------------------------------------
+NEW PROJECTS TO ADD
+------------------------------------------------------------
+  Name: MEXC
+  URL: https://www.mexc.com
+  Twitter: @MEXC_Global
+  Category: CEX
+  TVL: $2,800,000,000
+
+  Name: KuCoin
+  URL: https://www.kucoin.com
+  Twitter: @kaboringucoin
+  Category: CEX
+  TVL: $2,400,000,000
+
+  Name: Portal
+  URL: https://portal.exchange
+  Twitter: @portal_hq
+  Category: Bridge
+  TVL: $1,500,000,000
+
+  Name: HashKey Exchange
+  URL: https://hashkey.com
+  Twitter: @HashKeyExchange
+  Category: CEX
+  TVL: $1,100,000,000
+
+  Name: Ondo Yield Assets
+  URL: https://ondo.finance
+  Twitter: @OndoFinance
+  Category: RWA
+  TVL: $900,000,000
+
+  Name: Joule Finance
+  URL: https://joule.finance
+  Twitter: @JouleFinance
+  Category: Lending
+  TVL: $15,000,000
+
+  Name: Emojicoin.fun
+  URL: https://emojicoin.fun
+  Twitter: @emojicoin_fun
+  Category: Launchpad
+  TVL: $8,000,000
+
+  Name: Sushi Aptos
+  URL: https://sushi.com
+  Twitter: @SushiSwap
+  Category: Dexes
+  TVL: $2,500,000
+
+  Name: Abel Finance
+  URL: https://abel.finance
+  Twitter: @AbelFinance
+  Category: Lending
+  TVL: $2,000,000
+
+  Name: Propbase
+  URL: https://propbase.app
+  Twitter: @PropbaseApp
+  Category: RWA
+  TVL: $1,800,000
+
+  Name: MoneyFi
+  URL: https://moneyfi.xyz
+  Twitter: @MoneyFi_xyz
+  Category: Lending
+  TVL: $1,500,000
+
+  Name: Kofi Finance
+  URL: https://kofi.finance
+  Twitter: @KofiFinance
+  Category: Yield
+  TVL: $1,200,000
+
+  Name: MOAR Market
+  URL: https://moar.market
+  Twitter: @MOARMarket
+  Category: Lending
+  TVL: $1,000,000
+
+  Name: Superposition
+  URL: https://superposition.xyz
+  Twitter: @superposition_x
+  Category: Dexes
+  TVL: $800,000
+
+  Name: Auro Finance
+  URL: https://auro.finance
+  Twitter: @AuroFinance
+  Category: Yield
+  TVL: $600,000
+
+  Name: StreamFlow
+  URL: https://streamflow.finance
+  Twitter: @streamaboringflow_fi
+  Category: Payments
+  TVL: $500,000
+
+  Name: Earnium
+  URL: https://earnium.io
+  Twitter: @EarniumIO
+  Category: Yield
+  TVL: $400,000
+
+  Name: GoAPT
+  URL: https://goapt.xyz
+  Twitter: @GoAPT_xyz
+  Category: Yield
+  TVL: $300,000
+
+  Name: Bridgers
+  URL: https://bridgers.xyz
+  Twitter: @BridgersXYZ
+  Category: Bridge
+  TVL: $200,000
+
+  Name: TrustAKE
+  URL: https://trustake.com
+  Twitter: @TrustAKE
+  Category: Liquid Staking
+  TVL: $150,000

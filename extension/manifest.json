@@ -1,0 +1,50 @@
+{
+  "manifest_version": 3,
+  "name": "Ecosystem Scraper",
+  "version": "1.0.0",
+  "description": "Scrape project data from blockchain ecosystem directories (AptoFolio, DefiLlama, etc.) with social links extraction",
+  "permissions": [
+    "activeTab",
+    "storage",
+    "scripting"
+  ],
+  "host_permissions": [
+    "https://*.aptofolio.com/*",
+    "https://*.defillama.com/*",
+    "https://api.llama.fi/*",
+    "https://*.dappradar.com/*",
+    "https://*.coingecko.com/*"
+  ],
+  "action": {
+    "default_popup": "popup.html",
+    "default_icon": "icons/icon.svg"
+  },
+  "icons": {
+    "128": "icons/icon.svg"
+  },
+  "background": {
+    "service_worker": "background.js"
+  },
+  "content_scripts": [
+    {
+      "matches": ["https://*.aptofolio.com/*"],
+      "js": ["content-scripts/aptofolio.js"],
+      "run_at": "document_idle"
+    },
+    {
+      "matches": ["https://*.defillama.com/*", "https://api.llama.fi/*"],
+      "js": ["content-scripts/defillama.js"],
+      "run_at": "document_idle"
+    },
+    {
+      "matches": ["https://*.dappradar.com/*"],
+      "js": ["content-scripts/dappradar.js"],
+      "run_at": "document_idle"
+    },
+    {
+      "matches": ["https://*.coingecko.com/*"],
+      "js": ["content-scripts/coingecko.js"],
+      "run_at": "document_idle"
+    }
+  ]
+}
