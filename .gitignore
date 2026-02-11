@@ -34,5 +34,8 @@ credentials.json
 *.swo
 *~
 
+# Scraper output data (large CSVs, per-chain research results)
+BScraper */
+
 # Claude
 .claude/settings.local.json
