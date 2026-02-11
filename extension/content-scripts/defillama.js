@@ -250,12 +250,12 @@
   }
 
   // Main entry point
-  async function startScraping(useApi = false) {
-    const chain = getCurrentChain();
+  async function startScraping(useApi = false, chainOverride = null) {
+    const chain = chainOverride || getCurrentChain();
 
     if (useApi || !chain) {
       // Use API directly (works anywhere on DefiLlama)
-      console.log('[Ecosystem Scraper] Using DefiLlama API');
+      console.log('[Ecosystem Scraper] Using DefiLlama API' + (chainOverride ? ` (chain override: ${chainOverride})` : ''));
       return scrapeFromApi(chain);
     } else {
       // Use __NEXT_DATA__ for chain pages (faster, but less data)
@@ -268,8 +268,10 @@
   chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     if (message.action === 'startScraping') {
       if (!isScanning) {
+        // Accept optional chain override from popup
+        const chainOverride = message.chain ? message.chain.name : null;
         // Default to API mode for better data
-        startScraping(true);
+        startScraping(true, chainOverride);
         sendResponse({ success: true });
       } else {
         sendResponse({ success: false, error: 'Already scanning' });

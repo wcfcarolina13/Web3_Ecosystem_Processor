@@ -1,0 +1,26 @@
+{
+  "chains": [
+    {
+      "id": "aptos",
+      "name": "Aptos",
+      "sources": {
+        "defillama": {
+          "chain_slug": "Aptos",
+          "url": "https://defillama.com/chain/Aptos"
+        },
+        "dappradar": {
+          "protocol_slug": "aptos",
+          "url": "https://dappradar.com/rankings/protocol/aptos"
+        },
+        "coingecko": {
+          "category_slug": "aptos-ecosystem",
+          "url": "https://www.coingecko.com/en/categories/aptos-ecosystem"
+        },
+        "aptofolio": {
+          "url": "https://www.aptofolio.com"
+        }
+      }
+    }
+  ],
+  "_comment": "Add new chains by appending to the chains array. Not all sources are required per chain."
+}

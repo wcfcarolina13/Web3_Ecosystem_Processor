@@ -73,7 +73,7 @@
   }
 
   // Extract coins from ecosystem/category page
-  async function scrapeFromEcosystemPage() {
+  async function scrapeFromEcosystemPage(chainOverride = null) {
     scrapedProjects = [];
     isScanning = true;
 
@@ -142,7 +142,7 @@
           website: '',
           twitter: '',
           discord: '',
-          chain: category ? category.replace('-ecosystem', '').replace(/-/g, ' ') : '',
+          chain: chainOverride || (category ? category.replace('-ecosystem', '').replace(/-/g, ' ') : ''),
           slug: coin.slug,
           coingeckoUrl: `https://www.coingecko.com/en/coins/${coin.slug}`
         };
@@ -260,10 +260,10 @@
   }
 
   // Main entry point
-  async function startScraping() {
+  async function startScraping(chainOverride = null) {
     if (isEcosystemPage()) {
-      console.log('[Ecosystem Scraper] Scraping CoinGecko ecosystem/category page');
-      return scrapeFromEcosystemPage();
+      console.log('[Ecosystem Scraper] Scraping CoinGecko ecosystem/category page' + (chainOverride ? ` (chain override: ${chainOverride})` : ''));
+      return scrapeFromEcosystemPage(chainOverride);
     } else if (isCoinPage()) {
       console.log('[Ecosystem Scraper] Scraping CoinGecko coin detail page');
       return scrapeFromCoinPage();
@@ -278,7 +278,9 @@
   chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     if (message.action === 'startScraping') {
       if (!isScanning) {
-        startScraping();
+        // Accept optional chain override from popup
+        const chainOverride = message.chain ? message.chain.name : null;
+        startScraping(chainOverride);
         sendResponse({ success: true });
       } else {
         sendResponse({ success: false, error: 'Already scanning' });

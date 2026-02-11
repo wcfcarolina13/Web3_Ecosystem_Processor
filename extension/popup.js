@@ -9,6 +9,8 @@ const SUPPORTED_SITES = {
 
 let scrapedData = [];
 let isScanning = false;
+let chainsConfig = [];
+let selectedChain = null; // null = auto-detect
 
 // DOM elements
 const siteNameEl = document.getElementById('site-name');
@@ -24,9 +26,51 @@ const copyJsonBtn = document.getElementById('copy-json-btn');
 const mainContent = document.getElementById('main-content');
 const unsupportedContent = document.getElementById('unsupported-content');
 const toast = document.getElementById('toast');
+const chainSelect = document.getElementById('chain-select');
+
+// Load chains configuration
+async function loadChainsConfig() {
+  try {
+    const url = chrome.runtime.getURL('config/chains.json');
+    const response = await fetch(url);
+    const data = await response.json();
+    chainsConfig = data.chains || [];
+    populateChainDropdown();
+  } catch (error) {
+    console.warn('Could not load chains.json:', error);
+    // Extension still works, just without chain selection
+  }
+}
+
+// Populate chain selector dropdown
+function populateChainDropdown() {
+  // Keep the "Auto-detect" option, add chains
+  chainsConfig.forEach(chain => {
+    const option = document.createElement('option');
+    option.value = chain.id;
+    option.textContent = chain.name;
+    chainSelect.appendChild(option);
+  });
+
+  // Restore last selected chain
+  chrome.storage.local.get('selectedChainId', (result) => {
+    if (result.selectedChainId) {
+      chainSelect.value = result.selectedChainId;
+      selectedChain = chainsConfig.find(c => c.id === result.selectedChainId) || null;
+    }
+  });
+}
+
+// Get the selected chain name (for CSV export and display)
+function getSelectedChainName() {
+  if (selectedChain) return selectedChain.name;
+  return '';  // Empty string = auto-detect from content script
+}
 
 // Initialize popup
 async function init() {
+  await loadChainsConfig();
+
   const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
   const url = new URL(tab.url);
   const hostname = url.hostname.replace('www.', '');
@@ -112,6 +156,8 @@ function toCSV(data) {
     'AI Evidence URLs'
   ];
 
+  const chainName = getSelectedChainName();
+
   const rows = data.map(item => {
     return [
       item.name || '',
@@ -128,7 +174,7 @@ function toCSV(data) {
       item.discord || '',
       'TRUE', // AI Research
       item.category || '',
-      item.chain || 'Aptos',
+      item.chain || chainName || '',
       '', // USDT Support
       '', // USDT Type
       '', // Starknet Support
@@ -160,8 +206,14 @@ async function startScraping() {
   updateProgress(0, 100, 'Initializing...');
 
   try {
+    // Build message with optional chain override
+    const message = { action: 'startScraping' };
+    if (selectedChain) {
+      message.chain = selectedChain;  // Pass full chain config object
+    }
+
     // Send message to content script to start scraping
-    const response = await chrome.tabs.sendMessage(tab.id, { action: 'startScraping' });
+    const response = await chrome.tabs.sendMessage(tab.id, message);
 
     if (response && response.success) {
       showToast('Scraping started!');
@@ -203,10 +255,11 @@ function downloadCSV() {
   const url = URL.createObjectURL(blob);
   const timestamp = new Date().toISOString().split('T')[0];
   const siteName = siteNameEl.textContent.toLowerCase().replace(/\s+/g, '_');
+  const chainName = getSelectedChainName().toLowerCase().replace(/\s+/g, '_') || 'all';
 
   const a = document.createElement('a');
   a.href = url;
-  a.download = `${siteName}_ecosystem_${timestamp}.csv`;
+  a.download = `${chainName}_${siteName}_ecosystem_${timestamp}.csv`;
   a.click();
 
   URL.revokeObjectURL(url);
@@ -241,6 +294,18 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     showToast(message.error, true);
     stopScraping();
   }
+});
+
+// Chain selector change handler
+chainSelect.addEventListener('change', (e) => {
+  const chainId = e.target.value;
+  if (chainId) {
+    selectedChain = chainsConfig.find(c => c.id === chainId) || null;
+  } else {
+    selectedChain = null;  // Auto-detect
+  }
+  // Persist selection
+  chrome.storage.local.set({ selectedChainId: chainId });
 });
 
 // Event listeners

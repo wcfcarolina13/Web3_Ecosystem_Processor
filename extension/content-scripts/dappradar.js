@@ -68,12 +68,12 @@
   }
 
   // Extract dapp data from rankings page DOM
-  async function scrapeFromRankingsPage() {
+  async function scrapeFromRankingsPage(chainOverride = null) {
     scrapedProjects = [];
     isScanning = true;
 
     try {
-      const chain = getCurrentChain();
+      const chain = chainOverride || getCurrentChain();
 
       sendMessage('scrapeProgress', {
         current: 0,
@@ -257,10 +257,10 @@
   }
 
   // Main entry point
-  async function startScraping() {
+  async function startScraping(chainOverride = null) {
     if (isRankingsPage()) {
-      console.log('[Ecosystem Scraper] Scraping DappRadar rankings page');
-      return scrapeFromRankingsPage();
+      console.log('[Ecosystem Scraper] Scraping DappRadar rankings page' + (chainOverride ? ` (chain override: ${chainOverride})` : ''));
+      return scrapeFromRankingsPage(chainOverride);
     } else if (isDappPage()) {
       console.log('[Ecosystem Scraper] Scraping DappRadar dapp detail page');
       return scrapeFromDappPage();
@@ -275,7 +275,9 @@
   chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     if (message.action === 'startScraping') {
       if (!isScanning) {
-        startScraping();
+        // Accept optional chain override from popup
+        const chainOverride = message.chain ? message.chain.name : null;
+        startScraping(chainOverride);
         sendResponse({ success: true });
       } else {
         sendResponse({ success: false, error: 'Already scanning' });
