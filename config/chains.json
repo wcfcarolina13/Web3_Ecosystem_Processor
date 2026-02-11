@@ -3,6 +3,7 @@
     {
       "id": "aptos",
       "name": "Aptos",
+      "target_assets": ["USDT", "USDC", "APT"],
       "sources": {
         "defillama": {
           "chain_slug": "Aptos",
@@ -22,5 +23,6 @@
       }
     }
   ],
-  "_comment": "Add new chains by appending to the chains array. Not all sources are required per chain."
+  "_comment": "Add new chains by appending to the chains array. Not all sources are required per chain.",
+  "_assets_comment": "target_assets defines which tokens to detect per chain. Common: USDT, USDC, SOL, STRK, ADA, APT, ETH, BTC."
 }
