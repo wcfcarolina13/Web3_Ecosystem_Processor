@@ -19,9 +19,30 @@ from lib.columns import CORRECT_COLUMNS
 from lib.csv_utils import find_main_csv, resolve_data_path
 
 
-# Mapping from old column names to new column names
+# Mapping from old column names to new standard column names
 COLUMN_MAPPING = {
-    "Best social": "Telegram Channels"  # Map Best social to Telegram Channels
+    "Name": "Project Name",
+    "Best URL": "Website",
+    "Best social": "X Handle",
+    "Telegram Channels": "X Handle",  # Legacy: twitter was stored here
+    "Status": "The Grid Status",
+    "AI Evidence URLs": "Evidence URLs",
+    "Original URL": None,      # Dropped
+    "Slug": None,              # Dropped
+    "Secondary URL": None,     # Dropped
+    "AI Research": None,       # Dropped
+    "AI Notes & Sources": None,  # Dropped
+    "Category Rank": None,     # Dropped
+    "USDT Support": None,      # Dropped
+    "USDT Type": None,         # Dropped
+    "Starknet Support": None,  # Dropped
+    "Starknet Type": None,     # Dropped
+    "Solana Support": None,    # Dropped
+    "Solana Type": None,       # Dropped
+    "Profile Name 2": None,    # Dropped
+    "Root ID 2": None,         # Dropped
+    "Matched URL 2": None,     # Dropped
+    "Matched via 2": None,     # Dropped
 }
 
 
@@ -44,25 +65,37 @@ def transform_csv(csv_path: Path, output_path: Path = None):
     print(f"Old columns ({len(old_fieldnames)}): {old_fieldnames}")
     print(f"New columns ({len(CORRECT_COLUMNS)}): {list(CORRECT_COLUMNS)}")
 
+    # Build reverse mapping: new_col -> [old_col, ...]
+    reverse_map = {}
+    for old_col, new_col in COLUMN_MAPPING.items():
+        if new_col is not None:
+            reverse_map.setdefault(new_col, []).append(old_col)
+
     # Transform each row
     transformed_rows = []
     for row in rows:
         new_row = {}
         for col in CORRECT_COLUMNS:
-            # Check if we have a direct match
+            # Check if we have a direct match in the source row
             if col in row:
                 new_row[col] = row[col]
-            # Check if there's a mapped column
-            elif col in COLUMN_MAPPING.values():
-                # Find the old column that maps to this new column
-                for old_col, new_col in COLUMN_MAPPING.items():
-                    if new_col == col and old_col in row:
-                        new_row[col] = row[old_col]
+            # Check if an old column maps to this new column
+            elif col in reverse_map:
+                value = ''
+                for old_col in reverse_map[col]:
+                    if old_col in row and row[old_col]:
+                        value = row[old_col]
                         break
-                else:
-                    new_row[col] = ''
+                new_row[col] = value
             else:
                 new_row[col] = ''
+
+        # Build X Link from X Handle if not already set
+        if not new_row.get("X Link") and new_row.get("X Handle"):
+            handle = new_row["X Handle"].lstrip("@").strip()
+            if handle and not handle.startswith("http"):
+                new_row["X Link"] = f"https://x.com/{handle}"
+
         transformed_rows.append(new_row)
 
     # Write transformed CSV

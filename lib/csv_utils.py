@@ -27,8 +27,8 @@ def load_csv(csv_path: Path) -> List[Dict]:
 
 
 def get_names_from_csv(csv_path: Path) -> List[str]:
-    """Load just the Name column from a CSV."""
-    return [row["Name"] for row in load_csv(csv_path)]
+    """Load just the Project Name column from a CSV."""
+    return [row["Project Name"] for row in load_csv(csv_path)]
 
 
 def write_csv(

@@ -72,18 +72,21 @@ A Chrome extension for scraping project data from blockchain ecosystem directori
 
 ## CSV Output Format
 
-The exported CSV matches the Ecosystem Research Guidelines format:
+The exported CSV matches the 27-column team standard (defined in `lib/columns.py`):
 
 | Column | Description |
 |--------|-------------|
-| Name | Project name |
-| Notes | Project description |
-| Best URL | Primary website |
-| Best social | Twitter/X handle |
-| Secondary URL | Discord or other link |
-| AI Research | TRUE |
-| AI Notes & Sources | Category |
-| Chain | Blockchain |
+| Project Name | Project name |
+| Website | Primary website URL |
+| X Link | Full Twitter/X profile URL |
+| X Handle | Twitter/X handle |
+| Telegram | Telegram link |
+| Category | Project category (DeFi, Gaming, etc.) |
+| Chain | Blockchain name |
+| Source | Scraping source (DefiLlama, DappRadar, etc.) |
+| Notes | Category + description |
+| Suspect USDT support? | TRUE if DeFi category |
+| Web3 but no stablecoin | TRUE if non-DeFi category |
 
 ## Technical Details
 
@@ -122,8 +125,13 @@ ecosystem-scraper-extension/
 │   ├── defillama.js       # DefiLlama scraper
 │   ├── dappradar.js       # DappRadar scraper
 │   └── coingecko.js       # CoinGecko scraper
+├── config/
+│   └── chains.json        # Chain configurations
 └── icons/
-    └── icon.svg           # Extension icon
+    ├── icon-16.png        # Extension icon 16x16
+    ├── icon-32.png        # Extension icon 32x32
+    ├── icon-48.png        # Extension icon 48x48
+    └── icon-128.png       # Extension icon 128x128
 ```
 
 ### Adding Support for New Sites

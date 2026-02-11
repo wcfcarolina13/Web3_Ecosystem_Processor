@@ -24,7 +24,7 @@ def merge_csvs(main_csv: Path, new_csv: Path):
     """Append new projects to the main CSV, skipping duplicates."""
     # Read existing
     existing_rows = load_csv(main_csv)
-    existing_names = {row["Name"].lower() for row in existing_rows}
+    existing_names = {row["Project Name"].lower() for row in existing_rows}
     print(f"Existing entries: {len(existing_rows)}")
 
     # Read new projects

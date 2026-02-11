@@ -126,62 +126,90 @@ function enableExportButtons() {
   copyJsonBtn.disabled = false;
 }
 
-// Convert data to CSV
+// Convert data to CSV — 27-column team standard
 function toCSV(data) {
   if (data.length === 0) return '';
 
-  // CSV headers matching the Ecosystem Research Guidelines format
+  // CSV headers matching the 27-column team standard (lib/columns.py)
   const headers = [
-    'Name',
+    'Project Name',
     'Suspect USDT support?',
     'Skip',
     'Added',
     'Web3 but no stablecoin',
     'General Stablecoin Adoption',
+    'To be Added',
     'Processed?',
+    'In Admin',
+    'TG/TON appstore (no main URL)',
     'Final Status',
-    'Notes',
-    'Best URL',
-    'Best social',
-    'Secondary URL',
-    'AI Research',
-    'AI Notes & Sources',
+    'Website',
+    'X Link',
+    'X Handle',
+    'Telegram',
+    'Category',
+    'Release Date',
+    'Product Status',
+    'The Grid Status',
+    'Profile Name',
+    'Root ID',
+    'Matched URL',
+    'Matched via',
     'Chain',
-    'USDT Support',
-    'USDT Type',
-    'Starknet Support',
-    'Starknet Type',
-    'Solana Support',
-    'Solana Type',
-    'AI Evidence URLs'
+    'Source',
+    'Notes',
+    'Evidence URLs'
   ];
 
   const chainName = getSelectedChainName();
+  const sourceSite = siteNameEl.textContent || '';
+
+  // DeFi categories that likely involve stablecoin/USDT support
+  const defiCategories = new Set([
+    'CEX', 'Dexes', 'Lending', 'Derivatives', 'Bridge', 'RWA',
+    'DeFi', 'Exchanges', 'Yield', 'Liquid Staking', 'Payments',
+    'Launchpad'
+  ]);
 
   const rows = data.map(item => {
+    const category = item.category || '';
+    const isDefi = defiCategories.has(category);
+    const twitter = item.twitter || '';
+    const handleClean = twitter.replace(/^@/, '');
+    const xLink = handleClean ? `https://x.com/${handleClean}` : '';
+    const notes = [
+      category ? `${category} from ${sourceSite}` : '',
+      item.description || ''
+    ].filter(Boolean).join(' - ');
+
     return [
-      item.name || '',
-      '', // Suspect USDT support - to be filled
-      '', // Skip
-      '', // Added
-      '', // Web3 but no stablecoin
-      '', // General Stablecoin Adoption
-      '', // Processed?
-      '', // Final Status
-      item.description || '',
-      item.website || '',
-      item.twitter || '',
-      item.discord || '',
-      'TRUE', // AI Research
-      item.category || '',
-      item.chain || chainName || '',
-      '', // USDT Support
-      '', // USDT Type
-      '', // Starknet Support
-      '', // Starknet Type
-      '', // Solana Support
-      '', // Solana Type
-      '' // AI Evidence URLs
+      item.name || '',                          // Project Name
+      isDefi ? 'TRUE' : '',                     // Suspect USDT support?
+      '',                                        // Skip
+      '',                                        // Added
+      isDefi ? '' : 'TRUE',                     // Web3 but no stablecoin
+      '',                                        // General Stablecoin Adoption
+      '',                                        // To be Added
+      '',                                        // Processed?
+      '',                                        // In Admin
+      '',                                        // TG/TON appstore (no main URL)
+      '',                                        // Final Status
+      item.website || '',                        // Website
+      xLink,                                     // X Link
+      twitter,                                   // X Handle
+      item.telegram || '',                       // Telegram
+      category,                                  // Category
+      '',                                        // Release Date
+      '',                                        // Product Status
+      '',                                        // The Grid Status
+      '',                                        // Profile Name
+      '',                                        // Root ID
+      '',                                        // Matched URL
+      '',                                        // Matched via
+      item.chain || chainName || '',             // Chain
+      sourceSite,                                // Source
+      notes,                                     // Notes
+      ''                                         // Evidence URLs
     ].map(val => {
       // Escape CSV values
       if (typeof val === 'string' && (val.includes(',') || val.includes('"') || val.includes('\n'))) {

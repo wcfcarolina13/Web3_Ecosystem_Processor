@@ -148,10 +148,15 @@ def generate_new_csv_rows(new_projects: list, chain: str, source: str) -> list:
             }
             url = source_urls.get(source.lower(), "")
 
+        twitter = p.get("twitter", "")
+        # Build X Link from handle (strip @ prefix if present)
+        x_handle_clean = twitter.lstrip("@") if twitter else ""
+        x_link = f"https://x.com/{x_handle_clean}" if x_handle_clean else ""
+
         row = empty_row(chain)
         row.update(
             {
-                "Name": sanitize_csv_field(p.get("name", "")),
+                "Project Name": sanitize_csv_field(p.get("name", "")),
                 "Suspect USDT support?": "TRUE" if is_defi else "",
                 "Web3 but no stablecoin": "" if is_defi else "TRUE",
                 "Notes": sanitize_csv_field(
@@ -161,11 +166,9 @@ def generate_new_csv_rows(new_projects: list, chain: str, source: str) -> list:
                 ),
                 "Source": source,
                 "Category": sanitize_csv_field(category),
-                "Best URL": url,
-                "Slug": slug,
-                "Telegram Channels": p.get("twitter", ""),
-                "AI Research": "TRUE",
-                "AI Notes & Sources": sanitize_csv_field(f"{category} from {source}"),
+                "Website": url,
+                "X Link": x_link,
+                "X Handle": twitter,
                 "Chain": chain,
             }
         )
@@ -212,7 +215,7 @@ def main():
     # Load data
     print(f"Loading existing CSV: {csv_path}")
     existing = load_csv(csv_path)
-    existing_names = [row["Name"] for row in existing]
+    existing_names = [row["Project Name"] for row in existing]
 
     print(f"Loading scraped data: {data_path}")
     scraped = load_scraped_data(data_path)

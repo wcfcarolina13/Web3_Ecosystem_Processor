@@ -224,31 +224,36 @@ G) Suspect flags for this intake phase:
 H) Chain column:
    - Always set Chain = {CHAIN} for every row in this run.
 
-CSV COLUMN ORDER (MUST MATCH EXACTLY; keep non-intake columns blank)
-Name,
+CSV COLUMN ORDER (27 columns — MUST MATCH EXACTLY; keep non-intake columns blank)
+Project Name,
 Suspect USDT support?,
 Skip,
 Added,
 Web3 but no stablecoin,
 General Stablecoin Adoption,
+To be Added,
 Processed?,
+In Admin,
+TG/TON appstore (no main URL),
 Final Status,
-Notes,
-Best URL,
-Best social,
-Secondary URL,
-AI Research,
-AI Notes & Sources,
+Website,
+X Link,
+X Handle,
+Telegram,
+Category,
+Release Date,
+Product Status,
+The Grid Status,
+Profile Name,
+Root ID,
+Matched URL,
+Matched via,
 Chain,
-USDT Support,
-USDT Type,
-Starknet Support,
-Starknet Type,
-Solana Support,
-Solana Type,
-AI Evidence URLs
+Source,
+Notes,
+Evidence URLs
 
-- For intake: populate Name, Skip, Notes, Best URL, Best social, Secondary URL, Chain.
+- For intake: populate Project Name, Skip, Notes, Website, X Link, X Handle, Category, Chain, Source.
 - Leave everything else blank unless explicitly asked.
 
 ================================================================================

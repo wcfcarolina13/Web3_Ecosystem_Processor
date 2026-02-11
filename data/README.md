@@ -7,7 +7,7 @@ Per-chain research data for ecosystem research projects.
 ```
 data/
 ├── _template/
-│   └── ecosystem_research.csv    # Header-only template (34 standard columns)
+│   └── ecosystem_research.csv    # Header-only template (27 standard columns)
 ├── aptos/
 │   ├── aptos_usdt_ecosystem_research.csv   # Main research spreadsheet
 │   ├── comparison_report.txt                # DefiLlama comparison results
@@ -31,7 +31,7 @@ data/
 - New projects: `new_projects_<source>.csv`
 
 ### Column standard
-- All CSVs must use the 34 standard columns defined in `lib/columns.py`
+- All CSVs must use the 27 standard columns defined in `lib/columns.py`
 - Use `scripts/transform_csv_columns.py` to fix column mismatches
 - Use `data/_template/ecosystem_research.csv` as a reference
 

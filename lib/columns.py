@@ -1,10 +1,11 @@
 """
 Column definitions for Ecosystem Research CSVs.
 Single source of truth for column names and order.
+Aligned with the team's standard column format.
 """
 
 CORRECT_COLUMNS = [
-    "Name",
+    "Project Name",
     "Suspect USDT support?",
     "Skip",
     "Added",
@@ -15,29 +16,22 @@ CORRECT_COLUMNS = [
     "In Admin",
     "TG/TON appstore (no main URL)",
     "Final Status",
-    "Notes",
-    "Source",
+    "Website",
+    "X Link",
+    "X Handle",
+    "Telegram",
     "Category",
-    "Category Rank",
-    "Original URL",
-    "Best URL",
-    "Status",
-    "Matched URL",
+    "Release Date",
+    "Product Status",
+    "The Grid Status",
     "Profile Name",
-    "Slug",
     "Root ID",
-    "Telegram Channels",
-    "Secondary URL",
-    "AI Research",
-    "AI Notes & Sources",
+    "Matched URL",
+    "Matched via",
     "Chain",
-    "USDT Support",
-    "USDT Type",
-    "Starknet Support",
-    "Starknet Type",
-    "Solana Support",
-    "Solana Type",
-    "AI Evidence URLs",
+    "Source",
+    "Notes",
+    "Evidence URLs",
 ]
 
 
