@@ -40,6 +40,33 @@
           "url": "https://www.coingecko.com/en/categories/avalanche-ecosystem"
         }
       }
+    },
+    {
+      "id": "near",
+      "name": "NEAR",
+      "target_assets": ["USDT", "USDC", "SOL", "STRK", "ADA"],
+      "sources": {
+        "defillama": {
+          "chain_slug": "Near",
+          "url": "https://defillama.com/chain/Near"
+        },
+        "dappradar": {
+          "protocol_slug": "near",
+          "url": "https://dappradar.com/rankings/protocol/near"
+        },
+        "coingecko": {
+          "category_slug": "near-protocol-ecosystem",
+          "url": "https://www.coingecko.com/en/categories/near-protocol-ecosystem"
+        },
+        "awesomenear": {
+          "url": "https://awesomenear.com/",
+          "_status": "needs_scraper"
+        },
+        "nearcatalog": {
+          "url": "https://nearcatalog.xyz/",
+          "_status": "needs_scraper"
+        }
+      }
     }
   ],
   "_comment": "Add new chains by appending to the chains array. Not all sources are required per chain.",
