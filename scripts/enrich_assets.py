@@ -295,7 +295,6 @@ def enrich_csv(
 
         # Build enrichment updates
         updates = {}
-        evidence_parts = []
 
         # Update stablecoin heuristic columns
         if classification["has_any_stablecoin"]:
@@ -308,40 +307,70 @@ def enrich_csv(
             if not row.get("Suspect USDT support?"):
                 updates["Web3 but no stablecoin"] = "TRUE"
 
-        # Build evidence string with holdings
+        # Build evidence: structured asset totals (separate from notes)
+        evidence_parts = []
         for asset in target_assets:
             if asset in holdings and holdings[asset] > 0:
                 evidence_parts.append(f"{asset}: ${holdings[asset]:,.0f}")
 
         if evidence_parts:
-            evidence = f"DefiLlama token data ({chain_slug}): " + ", ".join(evidence_parts)
+            evidence = " | ".join(evidence_parts)
             existing_evidence = row.get("Evidence URLs", "").strip()
             if existing_evidence:
                 updates["Evidence URLs"] = f"{existing_evidence} | {evidence}"
             else:
                 updates["Evidence URLs"] = evidence
 
-            # Append to notes
-            existing_notes = row.get("Notes", "").strip()
-            asset_summary = ", ".join(evidence_parts)
-            note_addition = f"Token holdings: {asset_summary}"
-            if existing_notes:
-                if note_addition not in existing_notes:
-                    updates["Notes"] = f"{existing_notes} | {note_addition}"
-            else:
-                updates["Notes"] = note_addition
+        # Build notes: clean human-readable findings about target support
+        note_findings = []
+        has_usdt = classification["has_usdt"]
+        has_usdc = classification["has_usdc"]
+        has_sol = holdings.get("SOL", 0) > 0
+        has_strk = holdings.get("STRK", 0) > 0
+        has_ada = holdings.get("ADA", 0) > 0
 
-        if updates:
+        if has_usdt and has_usdc:
+            note_findings.append("Supports USDT + USDC")
+        elif has_usdt:
+            note_findings.append("Supports USDT")
+        elif has_usdc:
+            note_findings.append("Supports USDC only (no USDT)")
+
+        if has_sol:
+            note_findings.append("Solana token detected")
+        if has_strk:
+            note_findings.append("Starknet token detected")
+        if has_ada:
+            note_findings.append("Cardano token detected")
+
+        if not evidence_parts and not note_findings:
+            # Protocol found but no target assets at all
+            note_findings.append("No target asset support detected")
+
+        if note_findings:
+            finding_text = "; ".join(note_findings)
+            existing_notes = row.get("Notes", "").strip()
+            if existing_notes:
+                if finding_text not in existing_notes:
+                    updates["Notes"] = f"{existing_notes} | {finding_text}"
+            else:
+                updates["Notes"] = finding_text
+
+        if updates and (evidence_parts or note_findings):
             enriched += 1
+            # Console output
             status_parts = []
-            if classification["has_usdt"]:
+            if has_usdt:
                 status_parts.append(f"USDT=${classification['usdt_value']:,.0f}")
-            if classification["has_usdc"]:
+            if has_usdc:
                 status_parts.append(f"USDC=${classification['usdc_value']:,.0f}")
             for asset in target_assets:
-                if asset not in STABLECOIN_KEYS and asset in holdings:
+                if asset not in STABLECOIN_KEYS and asset in holdings and holdings[asset] > 0:
                     status_parts.append(f"{asset}=${holdings[asset]:,.0f}")
-            print(f" ✓ {', '.join(status_parts)}")
+            if status_parts:
+                print(f" ✓ {', '.join(status_parts)}")
+            else:
+                print(" ✓ no target assets")
 
             if not dry_run:
                 row.update(updates)
