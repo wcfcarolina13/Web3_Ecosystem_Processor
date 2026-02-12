@@ -3,6 +3,7 @@ CSV utilities for ecosystem research data.
 """
 
 import csv
+import re
 from pathlib import Path
 from typing import List, Dict, Optional
 
@@ -10,10 +11,32 @@ from .columns import CORRECT_COLUMNS
 
 
 def sanitize_csv_field(value) -> str:
-    """Sanitize a field value for CSV -- replace commas with semicolons."""
-    if isinstance(value, str):
-        return value.replace(",", ";")
-    return str(value) if value is not None else ""
+    """
+    Sanitize a field value for clean CSV output.
+
+    Rules (shared with extension popup.js toCSV):
+    1. Strip newlines / carriage returns → single space
+    2. Collapse whitespace
+    3. Decode common HTML entities
+    4. Replace commas with semicolons (avoids quoting issues in Google Sheets)
+    """
+    if value is None:
+        return ""
+    val = str(value)
+    # Strip newlines, collapse whitespace
+    val = val.replace("\r\n", " ").replace("\r", " ").replace("\n", " ")
+    val = re.sub(r"\s+", " ", val).strip()
+    # Decode common HTML entities
+    val = (
+        val.replace("&amp;", "&")
+        .replace("&lt;", "<")
+        .replace("&gt;", ">")
+        .replace("&#39;", "'")
+        .replace("&quot;", '"')
+    )
+    # Replace commas with semicolons to avoid CSV quoting issues
+    val = val.replace(",", ";")
+    return val
 
 
 def load_csv(csv_path: Path) -> List[Dict]:
@@ -43,7 +66,7 @@ def write_csv(
         writer = csv.DictWriter(f, fieldnames=cols)
         writer.writeheader()
         for row in rows:
-            clean_row = {k: row.get(k, "") for k in cols}
+            clean_row = {k: sanitize_csv_field(row.get(k, "")) for k in cols}
             writer.writerow(clean_row)
 
 
@@ -57,7 +80,7 @@ def append_csv(
     with open(csv_path, "a", newline="", encoding="utf-8") as f:
         writer = csv.DictWriter(f, fieldnames=cols)
         for row in rows:
-            clean_row = {k: row.get(k, "") for k in cols}
+            clean_row = {k: sanitize_csv_field(row.get(k, "")) for k in cols}
             writer.writerow(clean_row)
 
 
