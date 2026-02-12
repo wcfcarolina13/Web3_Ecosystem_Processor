@@ -107,3 +107,23 @@ This is how Ralph maintains continuity across iterations.
 - General Stablecoin Adoption = TRUE: 107 rows
 - Pipeline: 9 steps (dedup → expand-grid → grid → defillama → coingecko → website → promote → notes → sources)
 
+### Session 7 — 2026-02-12 (Manual)
+
+**Accomplished:**
+- **Pipeline Web UI** (`/pipeline` page): Full browser-based interface for the enrichment pipeline
+  - Upload CSV with column validation (rejects missing REQUIRED_COLUMNS)
+  - Configure steps via checkboxes, run pipeline with one click
+  - Live progress tracking: AJAX polls every 2s, shows per-step status (pending/running/completed/failed/skipped)
+  - Download enriched CSV directly from the browser
+  - Only one pipeline can run at a time (mutex enforcement, 409 on concurrent start)
+- **New files (4)**:
+  - `dashboard/pipeline_manager.py`: Thread-safe background job executor with PipelineJob/StepResult dataclasses
+  - `dashboard/pipeline_api.py`: Flask blueprint with 6 routes (page, upload, start, status, download, chains)
+  - `dashboard/templates/pipeline.html`: Upload + run controls + live step progress UI
+  - `docs/RENDER_PLAN.md`: Saved Render cloud deployment plan for future budget approval
+- **Modified files (4)**:
+  - `scripts/enrich_all.py`: `load_chain_config()` now raises ValueError (not sys.exit) for web UI compatibility
+  - `dashboard/__init__.py`: Registered pipeline blueprint + 16MB upload limit
+  - `dashboard/templates/base.html`: Added Pipeline nav link
+  - `dashboard/static/style.css`: Pipeline page styles with step state animations
+
