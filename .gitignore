@@ -37,5 +37,13 @@ credentials.json
 # Scraper output data (large CSVs, per-chain research results)
 BScraper */
 
+# Extension packaging artifacts
+*.zip
+*.crx
+
+# Temporary/scratch files
+*.tmp
+scratch/
+
 # Claude
 .claude/settings.local.json
