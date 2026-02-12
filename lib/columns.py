@@ -31,7 +31,7 @@ CORRECT_COLUMNS = [
     "Chain",
     "Source",
     "Notes",
-    "Evidence URLs",
+    "Evidence & Source URLs",
 ]
 
 

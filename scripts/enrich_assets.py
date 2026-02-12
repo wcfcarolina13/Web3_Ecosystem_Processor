@@ -285,6 +285,16 @@ def enrich_csv(
         # Extract token holdings
         holdings = extract_token_holdings(proto_data, chain_slug, target_assets)
 
+        # Also check multi-chain presence from the chains array
+        # DefiLlama includes which chains a protocol operates on
+        protocol_chains = {c.lower() for c in proto_data.get("chains", [])}
+        CHAIN_TO_ASSET = {"solana": "SOL", "starknet": "STRK", "cardano": "ADA"}
+        for chain_name, asset_key in CHAIN_TO_ASSET.items():
+            if chain_name in protocol_chains and asset_key in target_assets:
+                if asset_key not in holdings or holdings[asset_key] == 0:
+                    # Mark presence (0.01 as sentinel to distinguish from TVL data)
+                    holdings[asset_key] = holdings.get(asset_key, 0) or 0.01
+
         if not holdings:
             print(" (no token breakdown)")
             enriched_rows.append(row)
@@ -315,11 +325,11 @@ def enrich_csv(
 
         if evidence_parts:
             evidence = " | ".join(evidence_parts)
-            existing_evidence = row.get("Evidence URLs", "").strip()
+            existing_evidence = row.get("Evidence & Source URLs", "").strip()
             if existing_evidence:
-                updates["Evidence URLs"] = f"{existing_evidence} | {evidence}"
+                updates["Evidence & Source URLs"] = f"{existing_evidence} | {evidence}"
             else:
-                updates["Evidence URLs"] = evidence
+                updates["Evidence & Source URLs"] = evidence
 
         # Build notes: clean human-readable findings about target support
         note_findings = []
@@ -336,12 +346,16 @@ def enrich_csv(
         elif has_usdc:
             note_findings.append("Supports USDC only (no USDT)")
 
+        # Distinguish chain presence (from chains array) vs token holdings
         if has_sol:
-            note_findings.append("Solana token detected")
+            sol_val = holdings.get("SOL", 0)
+            note_findings.append("Solana chain presence" if sol_val <= 0.01 else "Solana token detected")
         if has_strk:
-            note_findings.append("Starknet token detected")
+            strk_val = holdings.get("STRK", 0)
+            note_findings.append("Starknet chain presence" if strk_val <= 0.01 else "Starknet token detected")
         if has_ada:
-            note_findings.append("Cardano token detected")
+            ada_val = holdings.get("ADA", 0)
+            note_findings.append("Cardano chain presence" if ada_val <= 0.01 else "Cardano token detected")
 
         if not evidence_parts and not note_findings:
             # Protocol found but no target assets at all

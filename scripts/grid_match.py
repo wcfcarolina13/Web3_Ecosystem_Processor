@@ -29,21 +29,16 @@ sys.path.insert(0, str(Path(__file__).parent.parent))
 from lib.columns import CORRECT_COLUMNS
 from lib.csv_utils import load_csv, write_csv, find_main_csv
 from lib.grid_client import GridAPIClient
+from lib.grid_client.support import (
+    TARGET_ASSET_GRID_MAP,
+    extract_supported_tickers,
+    check_target_support,
+)
 
 
 # ── Configuration ──────────────────────────────────────────────────────────
 
 REQUEST_DELAY = 0.3  # seconds between Grid API calls
-
-# Map our target asset tickers to Grid asset tickers/names
-# Grid uses "USDt" not "USDT", and full names like "Solana" not "SOL"
-TARGET_ASSET_GRID_MAP = {
-    "USDT": {"USDt", "USDT", "Tether USDt", "Tether"},
-    "USDC": {"USDC", "USD Coin"},
-    "SOL": {"SOL", "Solana"},
-    "STRK": {"STRK", "Starknet"},
-    "ADA": {"ADA", "Cardano"},
-}
 
 
 # ── Matching Logic ─────────────────────────────────────────────────────────
@@ -79,38 +74,6 @@ def score_name_match(grid_name: str, search_name: str) -> float:
     if s in g or g in s:
         return 0.6
     return 0.0
-
-
-def extract_supported_tickers(root_data: dict) -> Set[str]:
-    """
-    Extract all asset tickers that are 'Supported by' any product under this root.
-    """
-    tickers = set()
-    for product in root_data.get("products", []):
-        for rel in product.get("productAssetRelationships", []):
-            support_type = rel.get("assetSupportType") or {}
-            if support_type.get("slug") == "supported_by":
-                asset = rel.get("asset", {})
-                ticker = asset.get("ticker", "")
-                name = asset.get("name", "")
-                if ticker:
-                    tickers.add(ticker)
-                if name:
-                    tickers.add(name)
-    return tickers
-
-
-def check_target_support(supported_tickers: Set[str], target_assets: List[str]) -> Dict[str, bool]:
-    """
-    Check which target assets are supported based on Grid tickers.
-    Returns {asset: True/False}.
-    """
-    result = {}
-    for asset in target_assets:
-        grid_aliases = TARGET_ASSET_GRID_MAP.get(asset, {asset})
-        found = bool(grid_aliases & supported_tickers)
-        result[asset] = found
-    return result
 
 
 def match_project(
@@ -234,7 +197,7 @@ def run_grid_match(
                 "Grid URL": "",
                 "Grid Supported": "",
                 "Missing Assets": "",
-                "DefiLlama Evidence": row.get("Evidence URLs", ""),
+                "DefiLlama Evidence": row.get("Evidence & Source URLs", ""),
                 "Notes": "Project not found in The Grid",
             })
             output_rows.append(row)
@@ -258,7 +221,7 @@ def run_grid_match(
         missing_list = [a for a, v in target_support.items() if not v]
 
         # Check for gaps: we have DefiLlama evidence but Grid is missing support
-        evidence = row.get("Evidence URLs", "").strip()
+        evidence = row.get("Evidence & Source URLs", "").strip()
         real_gaps = []
         for asset in missing_list:
             # Check if DefiLlama found this asset

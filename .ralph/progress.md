@@ -35,3 +35,21 @@ This is how Ralph maintains continuity across iterations.
 
 **Criteria completed**: All 22 (Phases 3, 4, 5, 6)
 
+### Session 2 — 2026-02-12 (Manual)
+
+**Accomplished:**
+- **Column rename**: "Evidence URLs" → "Evidence & Source URLs" across all scripts, extension, templates, docs
+- **Grid asset enrichment** (`enrich_grid_assets.py`): New script queries Grid API for product→asset relationships on 187 matched rows. 140 rows enriched (75% hit rate)
+- **CoinGecko batch enrichment** (`enrich_coingecko.py`): Complete rewrite using `/coins/list?include_platform=true` — single API call fetches 18,933 coins, O(1) lookups per CSV row. 40 rows enriched with SOL/STRK/ADA platform deployments. Runtime: ~3 seconds (was ~2.5 hours)
+- **DefiLlama chains extraction**: Enhanced `enrich_assets.py` to extract `chains` array from protocol data for chain-presence detection (zero extra API cost)
+- **Shared support module** (`lib/grid_client/support.py`): Extracted TARGET_ASSET_GRID_MAP, extract_supported_tickers(), check_target_support() for reuse across scripts
+- **Notes cleanup** (`clean_notes.py`): Stripped "CATEGORIES from SOURCE - " prefixes, emojis, and marketing fluff from 884/887 notes. Preserved enrichment findings after " | " separators
+- **popup.js fix**: Notes generation now uses only `item.description` (categories + source already have own columns)
+
+**Final NEAR CSV stats (888 rows)**:
+- Grid asset data: 140 rows enriched
+- CoinGecko platform data: 40 rows enriched
+- Suspect USDT = TRUE: 169 rows
+- General Stablecoin Adoption = TRUE: 100 rows
+- Notes cleaned: 884 rows (0 still have old prefix pattern)
+

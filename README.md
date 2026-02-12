@@ -85,7 +85,7 @@ python3 scripts/enrich_assets.py --chain near --assets USDT,USDC --dry-run
 4. Extract `chainTvls[chain].tokensInUsd` for token holdings
 5. Detect target assets using aliases (e.g., USDT.e, axlUSDT, bridged USDT all count as USDT)
 
-**Populated columns:** `Suspect USDT support?`, `Web3 but no stablecoin`, `General Stablecoin Adoption`, `Evidence URLs`, `Notes`
+**Populated columns:** `Suspect USDT support?`, `Web3 but no stablecoin`, `General Stablecoin Adoption`, `Evidence & Source URLs`, `Notes`
 
 ### Stage 5: Gap Analysis
 
@@ -226,7 +226,7 @@ All research CSVs use 26 columns in a fixed order (defined in `lib/columns.py`):
 | Chain | Scraper | Blockchain network |
 | Source | Scraper | Data source (defillama, dappradar, etc.) |
 | Notes | Various | Free-text notes, gap flags |
-| Evidence URLs | enrich_assets.py | DefiLlama protocol URLs as evidence |
+| Evidence & Source URLs | enrich_assets.py | DefiLlama protocol URLs as evidence |
 
 ## Grid API
 

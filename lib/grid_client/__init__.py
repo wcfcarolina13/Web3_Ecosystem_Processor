@@ -14,5 +14,14 @@ Usage:
 from .client import GridAPIClient
 from .matcher import GridEntityMatcher
 from .models import GridMatch, GridMultiMatch
+from .support import TARGET_ASSET_GRID_MAP, extract_supported_tickers, check_target_support
 
-__all__ = ["GridAPIClient", "GridEntityMatcher", "GridMatch", "GridMultiMatch"]
+__all__ = [
+    "GridAPIClient",
+    "GridEntityMatcher",
+    "GridMatch",
+    "GridMultiMatch",
+    "TARGET_ASSET_GRID_MAP",
+    "extract_supported_tickers",
+    "check_target_support",
+]

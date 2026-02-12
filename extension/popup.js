@@ -200,7 +200,7 @@ function toCSV(data) {
     'Chain',
     'Source',
     'Notes',
-    'Evidence URLs'
+    'Evidence & Source URLs'
   ];
 
   const chainName = getSelectedChainName();
@@ -219,10 +219,8 @@ function toCSV(data) {
     const twitter = item.twitter || '';
     const handleClean = twitter.replace(/^@/, '');
     const xLink = handleClean ? `https://x.com/${handleClean}` : '';
-    const notes = [
-      category ? `${category} from ${sourceSite}` : '',
-      item.description || ''
-    ].filter(Boolean).join(' - ');
+    // Only use description for Notes (category + source already have own columns)
+    const notes = item.description || '';
 
     return [
       item.name || '',                          // Project Name
@@ -251,7 +249,7 @@ function toCSV(data) {
       item.chain || chainName || '',             // Chain
       sourceSite,                                // Source
       notes,                                     // Notes
-      ''                                         // Evidence URLs
+      ''                                         // Evidence & Source URLs
     ].map((val, colIdx) => {
       if (typeof val !== 'string') return val;
       // Sanitize: strip newlines, decode HTML entities, collapse whitespace

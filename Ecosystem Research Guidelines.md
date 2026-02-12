@@ -251,7 +251,7 @@ Matched via,
 Chain,
 Source,
 Notes,
-Evidence URLs
+Evidence & Source URLs
 
 - For intake: populate Project Name, Skip, Notes, Website, X Link, X Handle, Category, Chain, Source.
 - Leave everything else blank unless explicitly asked.

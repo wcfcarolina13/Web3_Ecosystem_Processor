@@ -26,7 +26,7 @@ COLUMN_MAPPING = {
     "Best social": "X Handle",
     "Telegram Channels": "X Handle",  # Legacy: twitter was stored here
     "Status": "The Grid Status",
-    "AI Evidence URLs": "Evidence URLs",
+    "AI Evidence URLs": "Evidence & Source URLs",
     "Original URL": None,      # Dropped
     "Slug": None,              # Dropped
     "Secondary URL": None,     # Dropped
