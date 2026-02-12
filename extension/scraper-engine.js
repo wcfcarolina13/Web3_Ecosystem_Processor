@@ -912,38 +912,21 @@
 
   // ==================== CONFIG LOADING ====================
 
-  async function loadConfigs() {
+  // Site configs are injected by Chrome as content scripts (listed in manifest.json
+  // before scraper-engine.js). Each config file pushes to window.EcoScraperSites.
+  // This function simply reads from that array — no eval or fetch needed.
+  function loadConfigs() {
     try {
-      const registryUrl = chrome.runtime.getURL('config/sites/registry.json');
-      const response = await fetch(registryUrl);
-      const registry = await response.json();
-
-      for (const filename of (registry.sites || [])) {
-        try {
-          const fileUrl = chrome.runtime.getURL(`config/sites/${filename}`);
-          const fileResponse = await fetch(fileUrl);
-          const code = await fileResponse.text();
-
-          // Eval in content script context — safe since we control the source files
-          window.EcoScraperSites = window.EcoScraperSites || [];
-          const before = window.EcoScraperSites.length;
-          // Use Function constructor to avoid strict-mode eval restrictions
-          new Function(code)();
-          if (window.EcoScraperSites.length > before) {
-            siteConfigs.push(window.EcoScraperSites[window.EcoScraperSites.length - 1]);
-          }
-        } catch (err) {
-          console.warn(`[Ecosystem Scraper] Failed to load config ${filename}:`, err.message);
-        }
+      const configs = window.EcoScraperSites || [];
+      for (const config of configs) {
+        siteConfigs.push(config);
       }
-
-      configsLoaded = true;
-      configsReadyResolve();
+      console.log(`[Ecosystem Scraper] Loaded ${siteConfigs.length} site configs`);
     } catch (err) {
-      console.warn('[Ecosystem Scraper] Failed to load registry:', err.message);
-      configsLoaded = true;
-      configsReadyResolve(); // Resolve even on failure so message listener works
+      console.warn('[Ecosystem Scraper] Failed to load configs:', err.message);
     }
+    configsLoaded = true;
+    configsReadyResolve();
   }
 
   // ==================== MESSAGE LISTENER ====================
@@ -1043,11 +1026,10 @@
 
   // ==================== BOOT ====================
 
-  loadConfigs().then(() => {
-    const config = findMatchingConfig(window.location.href);
-    if (config) {
-      console.log(`[Ecosystem Scraper] Engine loaded — matched: ${config.name} (${config.id})`);
-    }
-  });
+  loadConfigs();
+  const bootConfig = findMatchingConfig(window.location.href);
+  if (bootConfig) {
+    console.log(`[Ecosystem Scraper] Engine loaded — matched: ${bootConfig.name} (${bootConfig.id})`);
+  }
 
 })();

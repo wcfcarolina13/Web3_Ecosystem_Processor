@@ -38,7 +38,16 @@
   "content_scripts": [
     {
       "matches": ["<all_urls>"],
-      "js": ["scraper-engine.js"],
+      "js": [
+        "config/sites/defillama.js",
+        "config/sites/dappradar.js",
+        "config/sites/coingecko.js",
+        "config/sites/aptofolio.js",
+        "config/sites/awesomenear.js",
+        "config/sites/nearcatalog.js",
+        "config/sites/generic.js",
+        "scraper-engine.js"
+      ],
       "run_at": "document_idle"
     }
   ]

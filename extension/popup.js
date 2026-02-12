@@ -10,14 +10,23 @@ async function detectSite(tab) {
       return response && response.matched ? { id: response.siteId, name: response.siteName } : null;
     } catch (e) {
       if (attempt === 0) {
-        // Content script not present — inject it and retry
+        // Content script not present — inject configs + engine and retry
         try {
           await chrome.scripting.executeScript({
             target: { tabId: tab.id },
-            files: ['scraper-engine.js']
+            files: [
+              'config/sites/defillama.js',
+              'config/sites/dappradar.js',
+              'config/sites/coingecko.js',
+              'config/sites/aptofolio.js',
+              'config/sites/awesomenear.js',
+              'config/sites/nearcatalog.js',
+              'config/sites/generic.js',
+              'scraper-engine.js'
+            ]
           });
-          // Wait for configs to load
-          await new Promise(r => setTimeout(r, 1500));
+          // Brief wait for synchronous config loading
+          await new Promise(r => setTimeout(r, 300));
         } catch (injectErr) {
           // Can't inject (e.g., chrome:// pages) — give up
           return null;
