@@ -568,6 +568,12 @@
 
   // Heuristic scraper — tries multiple extraction methods on any page.
   // Used as fallback when no specific site config matches.
+  // Incorporates patterns from site-specific configs for robustness:
+  //   - Scroll-to-load (from dom_scroll configs)
+  //   - Multiple JSON sources (from Next.js, Nuxt, Gatsby patterns)
+  //   - Table extraction (from DappRadar-style HTML tables)
+  //   - Enhanced social link extraction per card (from detail configs)
+  //   - Better container/card detection (from various ecosystem directories)
 
   async function executeGenericDiscovery(strategyConfig, context) {
     const allProjects = [];
@@ -582,22 +588,96 @@
       allProjects.push(p);
     }
 
-    // --- Heuristic 1: Embedded JSON (Next.js __NEXT_DATA__, etc.) ---
+    // --- Phase 0: Scroll to load lazy content ---
+    // Many ecosystem directories lazy-load projects on scroll.
+    // Do a moderate scroll pass first to reveal hidden content.
+    reportProgress(0, 100, 'Loading page content (scrolling)...');
+    try {
+      let lastHeight = document.body.scrollHeight;
+      let scrollCount = 0;
+      let noChangeCount = 0;
+      const maxScrolls = 10;  // Conservative limit for generic mode
+      while (scrollCount < maxScrolls && noChangeCount < 3 && isScanning) {
+        window.scrollTo(0, document.body.scrollHeight);
+        await sleep(500);
+        const newHeight = document.body.scrollHeight;
+        if (newHeight === lastHeight) {
+          noChangeCount++;
+        } else {
+          noChangeCount = 0;
+        }
+        lastHeight = newHeight;
+        scrollCount++;
+      }
+      window.scrollTo(0, 0);
+      await sleep(300);
+    } catch (e) { console.warn('[Generic] Scroll pass failed:', e.message); }
+
+    // --- Heuristic 1: Embedded JSON (multiple framework patterns) ---
     reportProgress(0, 100, 'Trying embedded JSON...');
     try {
+      // Try multiple JSON data sources common in modern frameworks:
+      // 1. Next.js: #__NEXT_DATA__
+      // 2. Nuxt.js: window.__NUXT__
+      // 3. Generic: <script type="application/json">
+      // 4. Structured data: <script type="application/ld+json">
+
+      let jsonFound = false;
+
+      // --- 1a. Next.js __NEXT_DATA__ ---
       const nextEl = document.querySelector('#__NEXT_DATA__');
       if (nextEl) {
         const data = JSON.parse(nextEl.textContent);
         const arrays = findProjectArrays(data);
         if (arrays.length > 0) {
-          // Pick the best-scoring array
           const best = arrays.sort((a, b) => b.score - a.score)[0];
-          reportProgress(0, best.items.length, `Found ${best.items.length} items in embedded JSON`);
+          reportProgress(0, best.items.length, `Found ${best.items.length} items in Next.js data`);
           for (let i = 0; i < best.items.length && isScanning; i++) {
             addProject(extractProjectFromObject(best.items[i]));
             if (i % 20 === 0) reportProgress(allProjects.length, best.items.length, `JSON: ${allProjects.length} projects...`);
           }
+          jsonFound = true;
         }
+      }
+
+      // --- 1b. Generic <script type="application/json"> elements ---
+      if (!jsonFound) {
+        const jsonScripts = document.querySelectorAll('script[type="application/json"]');
+        for (const script of jsonScripts) {
+          if (jsonFound) break;
+          try {
+            const data = JSON.parse(script.textContent);
+            const arrays = findProjectArrays(data);
+            if (arrays.length > 0) {
+              const best = arrays.sort((a, b) => b.score - a.score)[0];
+              if (best.score >= 10) {  // Higher threshold for generic JSON
+                reportProgress(0, best.items.length, `Found ${best.items.length} items in embedded JSON`);
+                for (let i = 0; i < best.items.length && isScanning; i++) {
+                  addProject(extractProjectFromObject(best.items[i]));
+                  if (i % 20 === 0) reportProgress(allProjects.length, best.items.length, `JSON: ${allProjects.length} projects...`);
+                }
+                jsonFound = true;
+              }
+            }
+          } catch (parseErr) { /* skip non-JSON script blocks */ }
+        }
+      }
+
+      // --- 1c. Map-style JSON objects (keyed by slug, like NEARCatalog) ---
+      if (!jsonFound && nextEl) {
+        try {
+          const data = JSON.parse(nextEl.textContent);
+          const maps = findProjectMaps(data);
+          if (maps.length > 0) {
+            const best = maps.sort((a, b) => b.score - a.score)[0];
+            const items = Object.entries(best.map).map(([key, val]) => ({ _mapKey: key, ...val }));
+            reportProgress(0, items.length, `Found ${items.length} items in JSON map`);
+            for (let i = 0; i < items.length && isScanning; i++) {
+              addProject(extractProjectFromObject(items[i]));
+              if (i % 20 === 0) reportProgress(allProjects.length, items.length, `JSON map: ${allProjects.length} projects...`);
+            }
+          }
+        } catch (e) { /* ignore map parsing errors */ }
       }
     } catch (e) { console.warn('[Generic] JSON heuristic failed:', e.message); }
 
@@ -606,7 +686,7 @@
       return allProjects.slice(0, 500);
     }
 
-    // --- Heuristic 2: Repeated Link Patterns ---
+    // --- Heuristic 2: Repeated Link Patterns (enhanced) ---
     if (isScanning) {
       reportProgress(allProjects.length, 100, 'Trying link pattern detection...');
       try {
@@ -621,11 +701,39 @@
             groupSeen.add(match[1]);
 
             let name = '';
-            // Try: link text, heading in parent card, nearest heading
-            const card = link.closest('[class*="card"], [class*="item"], [class*="row"], tr, li, article');
+            let description = '';
+            let category = '';
+            let socials = { twitter: '', telegram: '', discord: '', github: '' };
+
+            // Try: heading in parent card, link text
+            const card = link.closest(
+              '[class*="card"], [class*="item"], [class*="row"], [class*="project"], ' +
+              '[class*="dapp"], [class*="protocol"], [class*="app-"], ' +
+              'tr, li, article, section'
+            );
             if (card) {
-              const heading = card.querySelector('h2, h3, h4, h5, [class*="name"], [class*="title"]');
+              const heading = card.querySelector(
+                'h1, h2, h3, h4, h5, [class*="name"], [class*="title"], ' +
+                '[class*="heading"], [data-testid*="name"]'
+              );
               if (heading) name = heading.textContent.trim();
+
+              // Extract description from card
+              const desc = card.querySelector(
+                'p, [class*="desc"], [class*="summary"], [class*="tagline"], ' +
+                '[class*="about"], [class*="subtitle"]'
+              );
+              if (desc) description = desc.textContent.trim().substring(0, 300);
+
+              // Extract category from card
+              const catEl = card.querySelector(
+                '[class*="category"], [class*="tag"], [class*="badge"], ' +
+                '[class*="chip"], [class*="label"]'
+              );
+              if (catEl) category = catEl.textContent.trim();
+
+              // Extract social links from card
+              socials = extractSocialLinks(card);
             }
             if (!name || name.length < 2) name = link.textContent.trim().split('\n')[0].trim();
 
@@ -637,9 +745,10 @@
                 name: name,
                 slug: match[1],
                 website: '',
-                twitter: '',
-                description: '',
-                category: '',
+                twitter: socials.twitter,
+                telegram: socials.telegram,
+                description: description,
+                category: category,
                 chain: context.chain || ''
               });
             }
@@ -655,38 +764,152 @@
       return allProjects.slice(0, 500);
     }
 
-    // --- Heuristic 3: Card/Grid Element Extraction ---
+    // --- Heuristic 3: HTML Table Extraction ---
+    // Many ecosystem directories use tables (like DappRadar rankings).
+    if (isScanning) {
+      reportProgress(allProjects.length, 100, 'Trying table extraction...');
+      try {
+        const tables = document.querySelectorAll('table');
+        for (const table of tables) {
+          const rows = table.querySelectorAll('tbody tr');
+          if (rows.length < 5) continue;  // Skip small tables
+
+          // Find column indices from header
+          const headers = table.querySelectorAll('thead th, thead td');
+          const headerTexts = Array.from(headers).map(h => h.textContent.trim().toLowerCase());
+
+          // Look for a name column
+          const nameIdx = headerTexts.findIndex(h =>
+            /^(name|project|dapp|protocol|token|app)$/i.test(h) ||
+            h.includes('name') || h.includes('project')
+          );
+
+          for (const row of rows) {
+            if (!isScanning) break;
+            const cells = row.querySelectorAll('td');
+            if (cells.length < 2) continue;
+
+            // Extract name: from identified column or first cell with a link
+            let name = '';
+            let slug = '';
+            const nameCell = nameIdx >= 0 ? cells[nameIdx] : cells[0];
+
+            const nameLink = nameCell.querySelector('a');
+            if (nameLink) {
+              name = nameLink.textContent.trim().replace(/\s+/g, ' ');
+              const href = nameLink.getAttribute('href') || '';
+              const slugMatch = href.match(/\/([^/?#]+)\/?$/);
+              if (slugMatch) slug = slugMatch[1];
+            } else {
+              name = nameCell.textContent.trim().replace(/\s+/g, ' ');
+            }
+
+            name = name.substring(0, 100);
+            if (!name || name.length < 2) continue;
+
+            // Try to find category from other cells
+            let category = '';
+            const catIdx = headerTexts.findIndex(h =>
+              h.includes('category') || h.includes('type') || h.includes('sector')
+            );
+            if (catIdx >= 0 && cells[catIdx]) {
+              category = cells[catIdx].textContent.trim();
+            }
+
+            const socials = extractSocialLinks(row);
+
+            addProject({
+              name: name,
+              slug: slug,
+              category: category,
+              twitter: socials.twitter,
+              telegram: socials.telegram,
+              description: '',
+              website: '',
+              chain: context.chain || ''
+            });
+          }
+        }
+        if (allProjects.length > 0) {
+          reportProgress(allProjects.length, allProjects.length, `Found ${allProjects.length} projects via table extraction`);
+        }
+      } catch (e) { console.warn('[Generic] Table heuristic failed:', e.message); }
+    }
+
+    if (allProjects.length >= 20) {
+      return allProjects.slice(0, 500);
+    }
+
+    // --- Heuristic 4: Card/Grid Element Extraction (enhanced) ---
     if (isScanning) {
       reportProgress(allProjects.length, 100, 'Trying card element extraction...');
       try {
-        // Find containers with many similar children (likely a project grid)
+        // Expanded container selectors for Web3 ecosystem directories
         const containers = document.querySelectorAll(
           '[class*="grid"], [class*="list"], [class*="projects"], [class*="directory"], ' +
-          '[class*="catalog"], [class*="results"], [class*="cards"], main ul, main ol'
+          '[class*="catalog"], [class*="results"], [class*="cards"], ' +
+          '[class*="dapps"], [class*="protocols"], [class*="ecosystem"], ' +
+          '[class*="apps"], [class*="tokens"], [class*="items"], ' +
+          '[class*="collection"], [class*="gallery"], ' +
+          '[role="list"], main ul, main ol, [data-testid*="list"]'
         );
+
         for (const container of containers) {
-          const children = container.querySelectorAll(':scope > *, :scope > li > *, :scope > div > *');
+          const children = container.querySelectorAll(
+            ':scope > *, :scope > li > *, :scope > div > *, ' +
+            ':scope > article, :scope > a'
+          );
           if (children.length < 5) continue;
 
           children.forEach(el => {
-            const heading = el.querySelector('h2, h3, h4, h5, [class*="name"], [class*="title"]');
+            // Expanded heading selectors
+            const heading = el.querySelector(
+              'h1, h2, h3, h4, h5, h6, ' +
+              '[class*="name"], [class*="title"], [class*="heading"], ' +
+              '[data-testid*="name"], [data-testid*="title"]'
+            );
             if (!heading) return;
 
             const name = heading.textContent.trim().replace(/\s+/g, ' ').substring(0, 100);
             if (!name || name.length < 2) return;
 
-            const desc = el.querySelector('p, [class*="desc"], [class*="summary"]');
+            // Description from multiple patterns
+            const desc = el.querySelector(
+              'p, [class*="desc"], [class*="summary"], [class*="tagline"], ' +
+              '[class*="about"], [class*="subtitle"], [class*="bio"]'
+            );
+
+            // Category from badges/tags
+            const catEl = el.querySelector(
+              '[class*="category"], [class*="tag"]:not(a), [class*="badge"], ' +
+              '[class*="chip"], [class*="label"]:not(label), [class*="type"]'
+            );
+
+            // Website URL: try multiple patterns
+            let website = '';
+            const websiteLink = el.querySelector(
+              'a[href*="http"]:not([href*="twitter"]):not([href*="x.com"])' +
+              ':not([href*="t.me"]):not([href*="discord"]):not([href*="github"])'
+            );
+            if (websiteLink) {
+              website = websiteLink.getAttribute('href');
+            }
+            // Also check data attributes
+            if (!website) {
+              website = el.getAttribute('data-url') || el.getAttribute('data-website') || '';
+            }
+
             const socials = extractSocialLinks(el);
-            const link = el.querySelector('a[href*="http"]');
 
             addProject({
               name: name,
               description: desc ? desc.textContent.trim().substring(0, 300) : '',
-              website: link ? link.getAttribute('href') : '',
+              website: website,
               twitter: socials.twitter,
               telegram: socials.telegram,
               discord: socials.discord,
               github: socials.github,
+              category: catEl ? catEl.textContent.trim().substring(0, 100) : '',
               chain: context.chain || ''
             });
           });
@@ -732,6 +955,44 @@
     return results;
   }
 
+  // Recursively find map-style objects (keyed by slug) that contain project data
+  // Pattern: {slug1: {name: '...', profile: {...}}, slug2: {...}} (e.g., NEARCatalog)
+  function findProjectMaps(obj, depth, maxDepth) {
+    depth = depth || 0;
+    maxDepth = maxDepth || 5;
+    const results = [];
+    if (depth > maxDepth || !obj || typeof obj !== 'object' || Array.isArray(obj)) return results;
+
+    // Check if this object itself is a project map
+    const keys = Object.keys(obj);
+    if (keys.length >= 5) {
+      let projectLike = 0;
+      const sampleKeys = keys.slice(0, 10);
+      for (const key of sampleKeys) {
+        const val = obj[key];
+        if (val && typeof val === 'object' && !Array.isArray(val)) {
+          // Check for project-like subkeys
+          const subkeys = Object.keys(val);
+          const hasName = subkeys.some(k => /^(name|title|label)$/i.test(k));
+          const hasProfile = subkeys.some(k => k === 'profile' || k === 'info' || k === 'meta');
+          if (hasName || hasProfile) projectLike++;
+        }
+      }
+      if (projectLike >= 3) {
+        results.push({ map: obj, score: projectLike * keys.length });
+      }
+    }
+
+    // Recurse into children
+    for (const key of keys) {
+      try {
+        const sub = findProjectMaps(obj[key], depth + 1, maxDepth);
+        results.push(...sub);
+      } catch (e) { /* circular ref or similar */ }
+    }
+    return results;
+  }
+
   // Score how "project-like" an array of objects is (0 = not at all, higher = better)
   function scoreArrayAsProjects(arr) {
     if (!arr || arr.length < 3) return 0;
@@ -760,29 +1021,74 @@
   function extractProjectFromObject(item) {
     if (!item || typeof item !== 'object') return null;
 
-    const name = item.name || item.title || item.projectName || item.label || '';
-    if (!name || typeof name !== 'string' || name.length < 2) return null;
-
-    let twitter = item.twitter || item.twitterHandle || item.x || '';
-    if (twitter && !String(twitter).startsWith('@') && !String(twitter).startsWith('http')) {
-      twitter = '@' + twitter;
+    // Handle nested profile pattern (e.g., NEARCatalog: {profile: {name, ...}})
+    // Also handle linktree pattern for social links
+    let data = item;
+    const profile = item.profile || item.info || item.meta;
+    if (profile && typeof profile === 'object') {
+      // Merge profile data with top-level data (profile takes priority for names)
+      data = { ...item, ...profile };
     }
 
-    let category = item.category || item.categories || item.tags || item.type || '';
+    const name = data.name || data.title || data.projectName || data.label || item._mapKey || '';
+    if (!name || typeof name !== 'string' || name.length < 2) return null;
+
+    // Twitter: handle URLs (https://twitter.com/handle) and bare handles
+    let twitter = data.twitter || data.twitterHandle || data.x || '';
+    if (typeof twitter === 'string') {
+      const twitterMatch = twitter.match(/(?:twitter\.com|x\.com)\/([^/?#]+)/);
+      if (twitterMatch) {
+        twitter = '@' + twitterMatch[1];
+      } else if (twitter && !twitter.startsWith('@') && !twitter.startsWith('http')) {
+        twitter = '@' + twitter;
+      }
+    }
+
+    // Check linktree-style nested social links
+    const linktree = data.linktree || data.links || data.social || data.socials || {};
+    if (typeof linktree === 'object' && !Array.isArray(linktree)) {
+      if (!twitter) {
+        const lt = linktree.twitter || linktree.x || '';
+        if (lt) {
+          const m = String(lt).match(/(?:twitter\.com|x\.com)\/([^/?#]+)/);
+          twitter = m ? '@' + m[1] : (lt.startsWith('@') ? lt : '@' + lt);
+        }
+      }
+    }
+
+    let category = data.category || data.categories || data.tags || data.type || '';
     if (Array.isArray(category)) category = category.join('; ');
-    if (typeof category === 'object') category = Object.keys(category).join('; ');
+    if (typeof category === 'object') {
+      // Handle {key: value} tag objects (NEARCatalog style)
+      category = Object.values(category).flat().join('; ');
+    }
+
+    let telegram = data.telegram || '';
+    if (!telegram && typeof linktree === 'object') {
+      telegram = linktree.telegram || '';
+    }
+
+    let discord = data.discord || '';
+    if (!discord && typeof linktree === 'object') {
+      discord = linktree.discord || '';
+    }
+
+    let github = data.github || '';
+    if (!github && typeof linktree === 'object') {
+      github = linktree.github || '';
+    }
 
     return {
       name: String(name).substring(0, 100),
-      slug: item.slug || item.id || String(name).toLowerCase().replace(/[^a-z0-9]+/g, '-'),
-      description: String(item.description || item.tagline || item.summary || item.oneliner || '').substring(0, 500),
+      slug: data.slug || data.id || item._mapKey || String(name).toLowerCase().replace(/[^a-z0-9]+/g, '-'),
+      description: String(data.description || data.tagline || data.summary || data.oneliner || '').substring(0, 500),
       category: String(category || ''),
-      website: item.website || item.url || item.homepage || '',
+      website: data.website || data.url || data.homepage || data.dapp || '',
       twitter: String(twitter || ''),
-      telegram: item.telegram || '',
-      discord: item.discord || '',
-      github: item.github || '',
-      chain: csvSafe(item.chain || item.network || item.chains || '')
+      telegram: String(telegram || ''),
+      discord: String(discord || ''),
+      github: String(github || ''),
+      chain: csvSafe(data.chain || data.network || data.chains || '')
     };
   }
 
@@ -791,12 +1097,23 @@
     const patternCounts = {};
     const links = document.querySelectorAll('a[href]');
 
+    // Expanded slug-bearing path keywords (from Web3 ecosystem sites)
+    const slugKeywords = [
+      'project', 'app', 'dapp', 'protocol', 'coin', 'token', 'nft',
+      'game', 'tool', 'ecosystem', 'defi', 'dao', 'marketplace',
+      'wallet', 'bridge', 'exchange', 'lending', 'staking', 'yield',
+      'validator', 'explorer', 'launchpad', 'aggregator',
+      'p', 'd', 'c', 'page'  // Short URL aliases
+    ];
+    const slugRegex = new RegExp(
+      '\\/(' + slugKeywords.join('|') + ')s?\\/([^/?#]+)', 'i'
+    );
+
     for (const link of links) {
       const href = link.getAttribute('href');
       if (!href || href.startsWith('#') || href.startsWith('javascript')) continue;
 
-      // Try to find a slug-bearing path segment
-      const match = href.match(/\/(project|app|dapp|protocol|coin|token|nft|game|tool|ecosystem|defi|dao|marketplace|p|d|c)s?\/([^/?#]+)/i);
+      const match = href.match(slugRegex);
       if (match) {
         const pattern = '/' + match[1].toLowerCase() + (href.includes(match[1] + 's/') ? 's/' : '/');
         if (!patternCounts[pattern]) patternCounts[pattern] = 0;
