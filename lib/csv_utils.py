@@ -5,7 +5,9 @@ CSV utilities for ecosystem research data.
 import csv
 import os
 import re
+import shutil
 import tempfile
+from datetime import datetime
 from pathlib import Path
 from typing import List, Dict, Optional
 
@@ -137,3 +139,26 @@ def find_main_csv(chain: str) -> Optional[Path]:
         return None
     csvs = list(data_dir.glob("*_ecosystem_research.csv"))
     return csvs[0] if csvs else None
+
+
+def backup_csv(csv_path: Path, suffix: str = None) -> Path:
+    """
+    Create a backup copy of a CSV file.
+
+    Args:
+        csv_path: Path to the CSV to back up.
+        suffix: Optional suffix (e.g., "pre-grid"). If omitted, uses a
+                timestamp like "20250212_143000".
+
+    Returns:
+        Path to the backup file (e.g., data/near/near_ecosystem_research.csv.pre-grid.bak).
+    """
+    csv_path = Path(csv_path)
+    if suffix:
+        bak_name = f"{csv_path.name}.{suffix}.bak"
+    else:
+        ts = datetime.now().strftime("%Y%m%d_%H%M%S")
+        bak_name = f"{csv_path.name}.{ts}.bak"
+    bak_path = csv_path.parent / bak_name
+    shutil.copy2(csv_path, bak_path)
+    return bak_path
