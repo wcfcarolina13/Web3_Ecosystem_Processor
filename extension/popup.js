@@ -81,7 +81,18 @@ async function init() {
   const site = await detectSite(tab);
 
   if (site) {
-    siteNameEl.textContent = site.name;
+    // Show generic mode badge if using fallback
+    if (site.id === 'generic') {
+      siteNameEl.textContent = 'Generic Scraper';
+      const badge = document.getElementById('generic-badge');
+      if (badge) badge.style.display = 'block';
+      // Show save URL button for generic sites
+      const saveBtn = document.getElementById('save-url-btn');
+      if (saveBtn) saveBtn.style.display = 'flex';
+    } else {
+      siteNameEl.textContent = site.name;
+    }
+
     mainContent.style.display = 'block';
     unsupportedContent.style.display = 'none';
 
@@ -96,6 +107,9 @@ async function init() {
     mainContent.style.display = 'none';
     unsupportedContent.style.display = 'block';
   }
+
+  // Update saved URLs count
+  updateSavedUrlsCount();
 }
 
 // Update project count display
@@ -336,12 +350,137 @@ chainSelect.addEventListener('change', (e) => {
   chrome.storage.local.set({ selectedChainId: chainId });
 });
 
+// ==================== SAVE URL FEATURE ====================
+
+// Save current URL for later config creation
+async function saveCurrentUrl() {
+  const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+  try {
+    const response = await chrome.tabs.sendMessage(tab.id, {
+      action: 'saveUrl',
+      url: tab.url,
+      title: tab.title || ''
+    });
+    if (response && response.success) {
+      showToast('URL saved! Ask Claude to build a config later.');
+      updateSavedUrlsCount();
+    } else if (response && response.error === 'URL already saved') {
+      showToast('This URL is already saved.', true);
+    }
+  } catch (e) {
+    // Fallback: save directly via chrome.storage if content script not available
+    chrome.storage.local.get({ savedUrls: [] }, (result) => {
+      const urls = result.savedUrls;
+      if (!urls.some(u => u.url === tab.url)) {
+        urls.push({ url: tab.url, title: tab.title || '', savedAt: new Date().toISOString(), note: '' });
+        chrome.storage.local.set({ savedUrls: urls }, () => {
+          showToast('URL saved! Ask Claude to build a config later.');
+          updateSavedUrlsCount();
+        });
+      } else {
+        showToast('This URL is already saved.', true);
+      }
+    });
+  }
+}
+
+// Update the saved URLs count badge
+function updateSavedUrlsCount() {
+  chrome.storage.local.get({ savedUrls: [] }, (result) => {
+    const count = result.savedUrls.length;
+    const countEl = document.getElementById('saved-urls-count');
+    if (countEl) {
+      countEl.textContent = count > 0 ? `(${count})` : '';
+    }
+  });
+}
+
+// Toggle saved URLs panel
+function toggleSavedUrls() {
+  const panel = document.getElementById('saved-urls-panel');
+  if (!panel) return;
+
+  if (panel.style.display === 'block') {
+    panel.style.display = 'none';
+    return;
+  }
+
+  panel.style.display = 'block';
+  renderSavedUrls();
+}
+
+// Render the saved URLs list
+function renderSavedUrls() {
+  const list = document.getElementById('saved-urls-list');
+  if (!list) return;
+
+  chrome.storage.local.get({ savedUrls: [] }, (result) => {
+    const urls = result.savedUrls;
+    if (urls.length === 0) {
+      list.innerHTML = '<div style="color:#666;font-size:12px;padding:8px;">No saved URLs yet.</div>';
+      return;
+    }
+
+    list.innerHTML = urls.map((item, idx) => {
+      const date = new Date(item.savedAt).toLocaleDateString();
+      const domain = new URL(item.url).hostname.replace('www.', '');
+      return `
+        <div class="saved-url-item" style="display:flex;align-items:center;gap:6px;padding:6px;border-bottom:1px solid #333;">
+          <div style="flex:1;min-width:0;">
+            <div style="font-size:12px;color:#eee;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;" title="${item.url}">${domain}</div>
+            <div style="font-size:10px;color:#666;">${date}</div>
+          </div>
+          <button class="saved-url-delete" data-url="${item.url}" style="background:none;border:none;color:#dc2626;cursor:pointer;font-size:14px;padding:4px;" title="Remove">✕</button>
+        </div>
+      `;
+    }).join('');
+
+    // Copy all button
+    list.innerHTML += `
+      <button id="copy-saved-urls-btn" style="width:100%;margin-top:6px;padding:6px;background:#16213e;border:1px solid #333;border-radius:4px;color:#a855f7;font-size:11px;cursor:pointer;">
+        Copy all URLs
+      </button>
+    `;
+
+    // Attach delete handlers
+    list.querySelectorAll('.saved-url-delete').forEach(btn => {
+      btn.addEventListener('click', async (e) => {
+        const url = e.currentTarget.dataset.url;
+        chrome.storage.local.get({ savedUrls: [] }, (result) => {
+          const filtered = result.savedUrls.filter(u => u.url !== url);
+          chrome.storage.local.set({ savedUrls: filtered }, () => {
+            renderSavedUrls();
+            updateSavedUrlsCount();
+          });
+        });
+      });
+    });
+
+    // Copy all handler
+    const copyBtn = list.querySelector('#copy-saved-urls-btn');
+    if (copyBtn) {
+      copyBtn.addEventListener('click', () => {
+        const text = urls.map(u => u.url).join('\n');
+        navigator.clipboard.writeText(text).then(() => showToast('URLs copied!'));
+      });
+    }
+  });
+}
+
 // Event listeners
 startBtn.addEventListener('click', startScraping);
 stopBtn.addEventListener('click', stopScraping);
 copyCsvBtn.addEventListener('click', copyCSV);
 downloadCsvBtn.addEventListener('click', downloadCSV);
 copyJsonBtn.addEventListener('click', copyJSON);
+
+// Save URL button
+const saveUrlBtn = document.getElementById('save-url-btn');
+if (saveUrlBtn) saveUrlBtn.addEventListener('click', saveCurrentUrl);
+
+// Saved URLs toggle
+const savedUrlsToggle = document.getElementById('saved-urls-toggle');
+if (savedUrlsToggle) savedUrlsToggle.addEventListener('click', toggleSavedUrls);
 
 // Initialize
 init();

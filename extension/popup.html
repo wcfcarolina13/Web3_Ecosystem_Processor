@@ -283,6 +283,7 @@
   <div id="main-content">
     <div class="status-bar">
       <div class="site">Current site: <span class="site-name" id="site-name">-</span></div>
+      <div id="generic-badge" style="display:none;font-size:11px;color:#f59e0b;margin:4px 0;">Experimental &mdash; heuristic extraction, results may vary</div>
       <div class="count" id="project-count">0</div>
       <div class="label">projects found</div>
 
@@ -298,6 +299,12 @@
       <button class="btn-primary" id="start-btn">Start Scraping</button>
       <button class="btn-danger" id="stop-btn" style="display:none;">Stop</button>
     </div>
+
+    <!-- Save URL button — shown only in generic mode -->
+    <button class="output-btn" id="save-url-btn" style="display:none;margin-bottom:12px;width:100%;justify-content:center;">
+      <svg viewBox="0 0 24 24" style="width:16px;height:16px;fill:currentColor;"><path d="M17 3H5a2 2 0 00-2 2v14a2 2 0 002 2h14c1.1 0 2-.9 2-2V7l-4-4zm-5 16c-1.66 0-3-1.34-3-3s1.34-3 3-3 3 1.34 3 3-1.34 3-3 3zm3-10H5V5h10v4z"/></svg>
+      Save URL for Later
+    </button>
 
     <div class="output-section">
       <h3>Export Data</h3>
@@ -318,17 +325,19 @@
     </div>
   </div>
 
-  <div id="unsupported-content" class="unsupported" style="display:none;">
-    <p>This site is not supported yet.</p>
-    <p>Navigate to a supported ecosystem directory to begin scraping.</p>
-    <div class="supported-sites">
-      <span>DefiLlama</span>
-      <span>DappRadar</span>
-      <span>CoinGecko</span>
-      <span>AptoFolio</span>
-      <span>AwesomeNEAR</span>
-      <span>NEARCatalog</span>
+  <!-- Saved URLs section — always visible at bottom -->
+  <div style="margin-top:12px;text-align:center;">
+    <button id="saved-urls-toggle" style="background:none;border:none;color:#666;font-size:12px;cursor:pointer;padding:4px 8px;">
+      Saved URLs <span id="saved-urls-count"></span>
+    </button>
+    <div id="saved-urls-panel" style="display:none;background:#16213e;border-radius:8px;padding:8px;margin-top:8px;max-height:200px;overflow-y:auto;">
+      <div id="saved-urls-list"></div>
     </div>
+  </div>
+
+  <div id="unsupported-content" class="unsupported" style="display:none;">
+    <p>No scraper config found for this site.</p>
+    <p>The engine should still load &mdash; try refreshing the page and reopening this popup.</p>
   </div>
 
   <div class="toast" id="toast"></div>

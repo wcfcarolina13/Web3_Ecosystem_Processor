@@ -5,6 +5,7 @@
     "coingecko.js",
     "aptofolio.js",
     "awesomenear.js",
-    "nearcatalog.js"
+    "nearcatalog.js",
+    "generic.js"
   ]
 }

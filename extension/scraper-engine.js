@@ -554,6 +554,256 @@
     return null;
   }
 
+  // ==================== STRATEGY: GENERIC DISCOVERY ====================
+
+  // Heuristic scraper — tries multiple extraction methods on any page.
+  // Used as fallback when no specific site config matches.
+
+  async function executeGenericDiscovery(strategyConfig, context) {
+    const allProjects = [];
+    const seen = new Set();
+
+    function addProject(p) {
+      if (!p || !p.name || p.name.length < 2) return;
+      const key = p.name.toLowerCase().trim();
+      if (seen.has(key)) return;
+      seen.add(key);
+      p._source = 'generic';
+      allProjects.push(p);
+    }
+
+    // --- Heuristic 1: Embedded JSON (Next.js __NEXT_DATA__, etc.) ---
+    reportProgress(0, 100, 'Trying embedded JSON...');
+    try {
+      const nextEl = document.querySelector('#__NEXT_DATA__');
+      if (nextEl) {
+        const data = JSON.parse(nextEl.textContent);
+        const arrays = findProjectArrays(data);
+        if (arrays.length > 0) {
+          // Pick the best-scoring array
+          const best = arrays.sort((a, b) => b.score - a.score)[0];
+          reportProgress(0, best.items.length, `Found ${best.items.length} items in embedded JSON`);
+          for (let i = 0; i < best.items.length && isScanning; i++) {
+            addProject(extractProjectFromObject(best.items[i]));
+            if (i % 20 === 0) reportProgress(allProjects.length, best.items.length, `JSON: ${allProjects.length} projects...`);
+          }
+        }
+      }
+    } catch (e) { console.warn('[Generic] JSON heuristic failed:', e.message); }
+
+    if (allProjects.length >= 20) {
+      reportProgress(allProjects.length, allProjects.length, `Found ${allProjects.length} projects via embedded JSON`);
+      return allProjects.slice(0, 500);
+    }
+
+    // --- Heuristic 2: Repeated Link Patterns ---
+    if (isScanning) {
+      reportProgress(allProjects.length, 100, 'Trying link pattern detection...');
+      try {
+        const linkGroups = findRepeatedLinkPatterns();
+        for (const group of linkGroups) {
+          const links = document.querySelectorAll(`a[href*="${group.pattern}"]`);
+          const groupSeen = new Set();
+          links.forEach(link => {
+            const href = link.getAttribute('href') || '';
+            const match = href.match(group.regex);
+            if (!match || groupSeen.has(match[1])) return;
+            groupSeen.add(match[1]);
+
+            let name = '';
+            // Try: link text, heading in parent card, nearest heading
+            const card = link.closest('[class*="card"], [class*="item"], [class*="row"], tr, li, article');
+            if (card) {
+              const heading = card.querySelector('h2, h3, h4, h5, [class*="name"], [class*="title"]');
+              if (heading) name = heading.textContent.trim();
+            }
+            if (!name || name.length < 2) name = link.textContent.trim().split('\n')[0].trim();
+
+            // Clean: remove excess whitespace, cap length
+            name = name.replace(/\s+/g, ' ').substring(0, 100);
+
+            if (name && name.length > 1 && name.length < 80) {
+              addProject({
+                name: name,
+                slug: match[1],
+                website: '',
+                twitter: '',
+                description: '',
+                category: '',
+                chain: context.chain || ''
+              });
+            }
+          });
+        }
+        if (allProjects.length > 0) {
+          reportProgress(allProjects.length, allProjects.length, `Found ${allProjects.length} projects via link patterns`);
+        }
+      } catch (e) { console.warn('[Generic] Link pattern heuristic failed:', e.message); }
+    }
+
+    if (allProjects.length >= 20) {
+      return allProjects.slice(0, 500);
+    }
+
+    // --- Heuristic 3: Card/Grid Element Extraction ---
+    if (isScanning) {
+      reportProgress(allProjects.length, 100, 'Trying card element extraction...');
+      try {
+        // Find containers with many similar children (likely a project grid)
+        const containers = document.querySelectorAll(
+          '[class*="grid"], [class*="list"], [class*="projects"], [class*="directory"], ' +
+          '[class*="catalog"], [class*="results"], [class*="cards"], main ul, main ol'
+        );
+        for (const container of containers) {
+          const children = container.querySelectorAll(':scope > *, :scope > li > *, :scope > div > *');
+          if (children.length < 5) continue;
+
+          children.forEach(el => {
+            const heading = el.querySelector('h2, h3, h4, h5, [class*="name"], [class*="title"]');
+            if (!heading) return;
+
+            const name = heading.textContent.trim().replace(/\s+/g, ' ').substring(0, 100);
+            if (!name || name.length < 2) return;
+
+            const desc = el.querySelector('p, [class*="desc"], [class*="summary"]');
+            const socials = extractSocialLinks(el);
+            const link = el.querySelector('a[href*="http"]');
+
+            addProject({
+              name: name,
+              description: desc ? desc.textContent.trim().substring(0, 300) : '',
+              website: link ? link.getAttribute('href') : '',
+              twitter: socials.twitter,
+              telegram: socials.telegram,
+              discord: socials.discord,
+              github: socials.github,
+              chain: context.chain || ''
+            });
+          });
+        }
+        if (allProjects.length > 0) {
+          reportProgress(allProjects.length, allProjects.length, `Found ${allProjects.length} projects via card extraction`);
+        }
+      } catch (e) { console.warn('[Generic] Card heuristic failed:', e.message); }
+    }
+
+    if (allProjects.length === 0) {
+      reportProgress(0, 0, 'No project data found on this page.');
+    }
+
+    return allProjects.slice(0, 500);
+  }
+
+  // --- Generic helpers ---
+
+  // Recursively find arrays in a nested object that look like project lists
+  function findProjectArrays(obj, depth, maxDepth) {
+    depth = depth || 0;
+    maxDepth = maxDepth || 5;
+    const results = [];
+    if (depth > maxDepth) return results;
+
+    if (Array.isArray(obj)) {
+      if (obj.length >= 5) {
+        const score = scoreArrayAsProjects(obj);
+        if (score > 0) results.push({ items: obj, score: score });
+      }
+      return results;
+    }
+
+    if (obj && typeof obj === 'object') {
+      for (const key of Object.keys(obj)) {
+        try {
+          const sub = findProjectArrays(obj[key], depth + 1, maxDepth);
+          results.push(...sub);
+        } catch (e) { /* circular ref or similar */ }
+      }
+    }
+    return results;
+  }
+
+  // Score how "project-like" an array of objects is (0 = not at all, higher = better)
+  function scoreArrayAsProjects(arr) {
+    if (!arr || arr.length < 3) return 0;
+    // Sample up to 10 items
+    const sample = arr.slice(0, 10);
+    let score = 0;
+    const nameFields = ['name', 'title', 'projectName', 'label'];
+    const bonusFields = ['description', 'website', 'url', 'twitter', 'category', 'categories', 'slug', 'tagline', 'tags'];
+
+    for (const item of sample) {
+      if (!item || typeof item !== 'object' || Array.isArray(item)) continue;
+      const keys = Object.keys(item);
+
+      // Must have a name-like field
+      const hasName = nameFields.some(f => item[f] && typeof item[f] === 'string' && item[f].length > 1);
+      if (hasName) {
+        score += 2;
+        // Bonus for additional project-like fields
+        score += bonusFields.filter(f => item[f]).length;
+      }
+    }
+    return score;
+  }
+
+  // Extract a project object from a generic JSON object with common field names
+  function extractProjectFromObject(item) {
+    if (!item || typeof item !== 'object') return null;
+
+    const name = item.name || item.title || item.projectName || item.label || '';
+    if (!name || typeof name !== 'string' || name.length < 2) return null;
+
+    let twitter = item.twitter || item.twitterHandle || item.x || '';
+    if (twitter && !String(twitter).startsWith('@') && !String(twitter).startsWith('http')) {
+      twitter = '@' + twitter;
+    }
+
+    let category = item.category || item.categories || item.tags || item.type || '';
+    if (Array.isArray(category)) category = category.join(', ');
+    if (typeof category === 'object') category = Object.keys(category).join(', ');
+
+    return {
+      name: String(name).substring(0, 100),
+      slug: item.slug || item.id || String(name).toLowerCase().replace(/[^a-z0-9]+/g, '-'),
+      description: String(item.description || item.tagline || item.summary || item.oneliner || '').substring(0, 500),
+      category: String(category || ''),
+      website: item.website || item.url || item.homepage || '',
+      twitter: String(twitter || ''),
+      telegram: item.telegram || '',
+      discord: item.discord || '',
+      github: item.github || '',
+      chain: item.chain || item.network || item.chains || ''
+    };
+  }
+
+  // Find URL patterns that repeat in <a> elements (e.g., /project/xxx appears 20+ times)
+  function findRepeatedLinkPatterns() {
+    const patternCounts = {};
+    const links = document.querySelectorAll('a[href]');
+
+    for (const link of links) {
+      const href = link.getAttribute('href');
+      if (!href || href.startsWith('#') || href.startsWith('javascript')) continue;
+
+      // Try to find a slug-bearing path segment
+      const match = href.match(/\/(project|app|dapp|protocol|coin|token|nft|game|tool|ecosystem|defi|dao|marketplace|p|d|c)s?\/([^/?#]+)/i);
+      if (match) {
+        const pattern = '/' + match[1].toLowerCase() + (href.includes(match[1] + 's/') ? 's/' : '/');
+        if (!patternCounts[pattern]) patternCounts[pattern] = 0;
+        patternCounts[pattern]++;
+      }
+    }
+
+    // Return patterns that appear 5+ times, sorted by count descending
+    return Object.entries(patternCounts)
+      .filter(([_, count]) => count >= 5)
+      .sort((a, b) => b[1] - a[1])
+      .map(([pattern]) => ({
+        pattern: pattern,
+        regex: new RegExp(pattern.replace(/\//g, '\\/') + '([^/?#]+)')
+      }));
+  }
+
   // ==================== STRATEGY DISPATCH ====================
 
   const STRATEGY_EXECUTORS = {
@@ -561,6 +811,7 @@
     dom_scroll: executeDomScroll,
     dom_detail: executeDomDetail,
     api_fetch: executeApiFetch,
+    generic_discovery: executeGenericDiscovery,
   };
 
   function selectStrategy(siteConfig) {
@@ -644,14 +895,17 @@
   // ==================== CONFIG MATCHING ====================
 
   function findMatchingConfig(url) {
+    // Try specific site configs first
     for (const config of siteConfigs) {
-      for (const pattern of (config.matchPatterns || [])) {
+      if (!config.matchPatterns || config.matchPatterns.length === 0) continue;
+      for (const pattern of config.matchPatterns) {
         if (matchUrlPattern(url, pattern)) {
           return config;
         }
       }
     }
-    return null;
+    // Fall back to generic config (empty matchPatterns, id === 'generic')
+    return siteConfigs.find(c => c.id === 'generic') || null;
   }
 
   // ==================== CONFIG LOADING ====================
@@ -730,6 +984,46 @@
         matched: !!config,
         siteId: config ? config.id : null,
         siteName: config ? config.name : null
+      });
+      return true;
+    }
+
+    // --- Save URL for later (bookmark unconfigured sites) ---
+
+    if (message.action === 'saveUrl') {
+      chrome.storage.local.get({ savedUrls: [] }, (result) => {
+        const urls = result.savedUrls;
+        // Avoid duplicates
+        if (!urls.some(u => u.url === message.url)) {
+          urls.push({
+            url: message.url,
+            title: message.title || '',
+            savedAt: new Date().toISOString(),
+            note: message.note || ''
+          });
+          chrome.storage.local.set({ savedUrls: urls }, () => {
+            sendResponse({ success: true, count: urls.length });
+          });
+        } else {
+          sendResponse({ success: false, error: 'URL already saved' });
+        }
+      });
+      return true; // async sendResponse
+    }
+
+    if (message.action === 'getSavedUrls') {
+      chrome.storage.local.get({ savedUrls: [] }, (result) => {
+        sendResponse({ urls: result.savedUrls });
+      });
+      return true;
+    }
+
+    if (message.action === 'removeSavedUrl') {
+      chrome.storage.local.get({ savedUrls: [] }, (result) => {
+        const urls = result.savedUrls.filter(u => u.url !== message.url);
+        chrome.storage.local.set({ savedUrls: urls }, () => {
+          sendResponse({ success: true, count: urls.length });
+        });
       });
       return true;
     }
