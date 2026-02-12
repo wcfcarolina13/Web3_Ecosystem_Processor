@@ -4,8 +4,9 @@ Unified enrichment runner — runs all enrichment + cleanup steps in sequence.
 
 Orchestrates:
   1. Dedup (remove duplicate rows)
-  2. Grid asset enrichment (query Grid API for matched rows)
-  3. DefiLlama enrichment (token holdings + chain presence)
+  2. Expand Grid matching (batch name + URL against all profiles/products)
+  3. Grid asset enrichment (query Grid API for matched rows)
+  4. DefiLlama enrichment (token holdings + chain presence)
   4. CoinGecko enrichment (batch platform deployments)
   5. Website keyword scan (homepage HTML for asset/stablecoin keywords)
   6. Hint promotion (promote website-scan findings to boolean columns)
@@ -34,10 +35,11 @@ from lib.csv_utils import find_main_csv, load_csv
 # Lazy imports — only import each module when its step runs,
 # so a broken step doesn't block the others.
 
-STEPS = ["dedup", "grid", "defillama", "coingecko", "website", "promote", "notes", "sources"]
+STEPS = ["dedup", "expand-grid", "grid", "defillama", "coingecko", "website", "promote", "notes", "sources"]
 
 STEP_DESCRIPTIONS = {
     "dedup": "Deduplicate rows (normalized name + website domain)",
+    "expand-grid": "Expand Grid matching (batch name + URL against all profiles/products)",
     "grid": "Grid API asset enrichment (matched rows only)",
     "defillama": "DefiLlama token holdings + chain presence",
     "coingecko": "CoinGecko batch platform deployments",
@@ -69,6 +71,21 @@ def run_step_dedup(csv_path: Path, dry_run: bool, **kwargs) -> dict:
         "unique": unique,
         "exact_removed": exact,
         "fuzzy_removed": fuzzy,
+    }
+
+
+def run_step_expand_grid(csv_path: Path, chain: str, dry_run: bool, **kwargs) -> dict:
+    """Expand Grid matching with batch name + URL strategies."""
+    from scripts.expand_grid_matches import expand_matches
+    total, unmatched, matched, counts = expand_matches(
+        csv_path, chain,
+        strategies=["batch-name", "batch-url"],
+        dry_run=dry_run,
+    )
+    return {
+        "total": total, "unmatched_before": unmatched,
+        "newly_matched": matched,
+        **{f"via_{k}": v for k, v in counts.items()},
     }
 
 
@@ -144,6 +161,7 @@ def run_step_sources(csv_path: Path, chain: str, dry_run: bool, **kwargs) -> dic
 
 STEP_RUNNERS = {
     "dedup": run_step_dedup,
+    "expand-grid": run_step_expand_grid,
     "grid": run_step_grid,
     "defillama": run_step_defillama,
     "coingecko": run_step_coingecko,
