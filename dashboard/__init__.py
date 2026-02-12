@@ -11,8 +11,12 @@ def create_app(default_chain=None):
         static_folder=str(Path(__file__).parent / "static"),
     )
     app.config["DEFAULT_CHAIN"] = default_chain or "near"
+    app.config["MAX_CONTENT_LENGTH"] = 16 * 1024 * 1024  # 16 MB upload limit
 
     from .app import bp
     app.register_blueprint(bp)
+
+    from .pipeline_api import pipeline_bp
+    app.register_blueprint(pipeline_bp)
 
     return app

@@ -453,3 +453,196 @@ footer code {
     main { padding: 12px; }
     .stat-value { font-size: 24px; }
 }
+
+/* ── Pipeline Page ── */
+.pipeline-section h2 {
+    font-size: 20px;
+    font-weight: 700;
+    color: var(--text);
+    margin-bottom: 20px;
+}
+
+.panel {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 20px;
+    box-shadow: var(--shadow);
+    margin-bottom: 16px;
+}
+
+.panel h3 {
+    font-size: 13px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    color: var(--text-muted);
+    margin-bottom: 16px;
+}
+
+/* Upload controls */
+.upload-controls {
+    display: flex;
+    gap: 16px;
+    align-items: flex-end;
+    flex-wrap: wrap;
+}
+
+.upload-controls .filter-group select,
+.upload-controls .filter-group input {
+    min-width: 180px;
+}
+
+.status-msg {
+    margin-top: 10px;
+    font-size: 13px;
+    color: var(--text-muted);
+    min-height: 20px;
+}
+
+.status-msg.success { color: var(--success); font-weight: 500; }
+.status-msg.error { color: var(--danger); font-weight: 500; }
+
+/* Step checkboxes */
+.step-checkboxes {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    gap: 8px;
+    margin-bottom: 16px;
+}
+
+.step-checkbox {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 13px;
+    cursor: pointer;
+    padding: 6px 8px;
+    border-radius: var(--radius);
+    transition: background 0.15s;
+}
+
+.step-checkbox:hover {
+    background: var(--bg);
+}
+
+.step-checkbox input[type="checkbox"] {
+    accent-color: var(--primary);
+    cursor: pointer;
+}
+
+.step-checkbox .step-name {
+    font-weight: 600;
+    min-width: 90px;
+    font-family: 'SF Mono', 'Fira Code', monospace;
+    font-size: 12px;
+}
+
+.step-checkbox .step-desc {
+    color: var(--text-muted);
+    font-size: 12px;
+}
+
+/* Controls actions */
+.controls-actions {
+    display: flex;
+    gap: 12px;
+    align-items: center;
+}
+
+.btn-run {
+    background: var(--success);
+    border-color: var(--success);
+    padding: 8px 24px;
+    font-size: 14px;
+}
+
+.btn-run:hover { opacity: 0.9; }
+
+.btn-run:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+
+/* Progress panel */
+.step-list {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.step-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 8px 12px;
+    border-radius: var(--radius);
+    font-size: 13px;
+    transition: background 0.2s;
+}
+
+.step-icon {
+    width: 20px;
+    text-align: center;
+    font-size: 14px;
+    flex-shrink: 0;
+}
+
+.step-label {
+    font-weight: 600;
+    font-family: 'SF Mono', 'Fira Code', monospace;
+    font-size: 12px;
+    min-width: 100px;
+}
+
+.step-result {
+    color: var(--text-muted);
+    font-size: 12px;
+    flex: 1;
+}
+
+/* Step states */
+.step-pending { color: var(--text-muted); }
+.step-pending .step-icon { color: #ccc; }
+
+.step-running {
+    background: #eef3ff;
+}
+.step-running .step-icon {
+    color: var(--primary);
+    animation: pulse 1.2s ease-in-out infinite;
+}
+
+.step-completed .step-icon { color: var(--success); }
+.step-completed .step-result { color: var(--text); }
+
+.step-failed { background: #fff5f5; }
+.step-failed .step-icon { color: var(--danger); }
+.step-failed .step-result { color: var(--danger); }
+
+.step-skipped { opacity: 0.5; }
+.step-skipped .step-icon { color: var(--text-muted); }
+
+@keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.3; }
+}
+
+/* Pipeline summary */
+.pipeline-summary {
+    margin-top: 16px;
+    padding: 10px 12px;
+    border-radius: var(--radius);
+    font-size: 14px;
+    font-weight: 500;
+}
+
+.summary-success {
+    background: #d4edda;
+    color: #155724;
+}
+
+.summary-failed {
+    background: #f8d7da;
+    color: #721c24;
+}

@@ -1,0 +1,252 @@
+{% extends "base.html" %}
+
+{% block title %}Pipeline — Ecosystem Research{% endblock %}
+
+{% block content %}
+<div class="pipeline-section">
+    <h2>Enrichment Pipeline</h2>
+
+    <!-- Upload Panel -->
+    <div class="panel upload-panel">
+        <h3>1. Upload CSV</h3>
+        <div class="upload-controls">
+            <div class="filter-group">
+                <label for="upload-chain">Chain</label>
+                <select id="upload-chain">
+                    {% for c in chain_data %}
+                    <option value="{{ c.id }}" {% if c.id == chain %}selected{% endif %}
+                            data-rows="{{ c.row_count }}" data-has-data="{{ c.has_data|lower }}">
+                        {{ c.name }}{% if c.has_data %} ({{ c.row_count }} rows){% endif %}
+                    </option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="filter-group">
+                <label for="csv-file">CSV File</label>
+                <input type="file" id="csv-file" accept=".csv">
+            </div>
+            <button class="btn" id="btn-upload" onclick="uploadCSV()">Upload</button>
+        </div>
+        <div id="upload-status" class="status-msg"></div>
+    </div>
+
+    <!-- Enrichment Controls -->
+    <div class="panel controls-panel">
+        <h3>2. Configure &amp; Run</h3>
+        <div class="step-checkboxes">
+            {% for s in steps %}
+            <label class="step-checkbox">
+                <input type="checkbox" name="step" value="{{ s }}" checked>
+                <span class="step-name">{{ s }}</span>
+                <span class="step-desc">{{ step_descriptions[s] }}</span>
+            </label>
+            {% endfor %}
+        </div>
+        <div class="controls-actions">
+            <button class="btn btn-run" id="btn-run" onclick="startPipeline()">
+                Run Enrichment
+            </button>
+            <a class="btn btn-secondary" id="btn-download"
+               href="/api/download/{{ chain }}" download>
+                Download CSV
+            </a>
+        </div>
+    </div>
+
+    <!-- Progress Panel -->
+    <div class="panel progress-panel" id="progress-panel" style="display: none;">
+        <h3>3. Progress</h3>
+        <div class="step-list" id="step-list"></div>
+        <div class="pipeline-summary" id="pipeline-summary"></div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+(function() {
+    let currentJobId = null;
+    let pollTimer = null;
+
+    window.uploadCSV = function() {
+        const chain = document.getElementById('upload-chain').value;
+        const fileInput = document.getElementById('csv-file');
+        const statusEl = document.getElementById('upload-status');
+
+        if (!fileInput.files.length) {
+            statusEl.textContent = 'Please select a CSV file.';
+            statusEl.className = 'status-msg error';
+            return;
+        }
+
+        const formData = new FormData();
+        formData.append('chain', chain);
+        formData.append('file', fileInput.files[0]);
+
+        statusEl.textContent = 'Uploading...';
+        statusEl.className = 'status-msg';
+        document.getElementById('btn-upload').disabled = true;
+
+        fetch('/api/upload', { method: 'POST', body: formData })
+            .then(r => r.json().then(d => ({ ok: r.ok, data: d })))
+            .then(({ ok, data }) => {
+                if (ok) {
+                    statusEl.textContent = data.message;
+                    statusEl.className = 'status-msg success';
+                    // Update chain dropdown row count
+                    const opt = document.querySelector(`#upload-chain option[value="${chain}"]`);
+                    if (opt) opt.textContent = `${opt.textContent.split('(')[0].trim()} (${data.rows} rows)`;
+                } else {
+                    statusEl.textContent = data.error || 'Upload failed';
+                    statusEl.className = 'status-msg error';
+                }
+                document.getElementById('btn-upload').disabled = false;
+            })
+            .catch(err => {
+                statusEl.textContent = 'Network error: ' + err.message;
+                statusEl.className = 'status-msg error';
+                document.getElementById('btn-upload').disabled = false;
+            });
+    };
+
+    window.startPipeline = function() {
+        const chain = document.getElementById('upload-chain').value;
+        const checkboxes = document.querySelectorAll('input[name="step"]:not(:checked)');
+        const skip = Array.from(checkboxes).map(cb => cb.value);
+
+        const btnRun = document.getElementById('btn-run');
+        btnRun.disabled = true;
+        btnRun.textContent = 'Running...';
+
+        fetch('/api/pipeline/start', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ chain, skip }),
+        })
+        .then(r => r.json().then(d => ({ ok: r.ok, data: d })))
+        .then(({ ok, data }) => {
+            if (ok) {
+                currentJobId = data.job_id;
+                showProgress(data.steps);
+                startPolling();
+            } else {
+                alert(data.error || 'Failed to start pipeline');
+                btnRun.disabled = false;
+                btnRun.textContent = 'Run Enrichment';
+            }
+        })
+        .catch(err => {
+            alert('Network error: ' + err.message);
+            btnRun.disabled = false;
+            btnRun.textContent = 'Run Enrichment';
+        });
+    };
+
+    function showProgress(steps) {
+        const panel = document.getElementById('progress-panel');
+        panel.style.display = '';
+        const list = document.getElementById('step-list');
+        list.innerHTML = steps.map(name => `
+            <div class="step-item step-pending" id="step-${name}">
+                <span class="step-icon">&#9679;</span>
+                <span class="step-label">${name}</span>
+                <span class="step-result"></span>
+            </div>
+        `).join('');
+        document.getElementById('pipeline-summary').textContent = '';
+    }
+
+    function startPolling() {
+        if (pollTimer) clearInterval(pollTimer);
+        pollTimer = setInterval(pollStatus, 2000);
+        pollStatus(); // immediate first poll
+    }
+
+    function pollStatus() {
+        if (!currentJobId) return;
+
+        fetch(`/api/pipeline/status/${currentJobId}`)
+            .then(r => r.json())
+            .then(job => {
+                updateSteps(job.steps);
+                updateSummary(job);
+
+                if (job.status === 'completed' || job.status === 'failed') {
+                    clearInterval(pollTimer);
+                    pollTimer = null;
+                    const btnRun = document.getElementById('btn-run');
+                    btnRun.disabled = false;
+                    btnRun.textContent = 'Run Enrichment';
+                }
+            })
+            .catch(() => {});
+    }
+
+    function updateSteps(steps) {
+        steps.forEach(step => {
+            const el = document.getElementById(`step-${step.name}`);
+            if (!el) return;
+
+            // Remove old state classes
+            el.className = 'step-item';
+
+            const iconEl = el.querySelector('.step-icon');
+            const resultEl = el.querySelector('.step-result');
+
+            switch (step.status) {
+                case 'pending':
+                    el.classList.add('step-pending');
+                    iconEl.innerHTML = '&#9679;';
+                    resultEl.textContent = '';
+                    break;
+                case 'running':
+                    el.classList.add('step-running');
+                    iconEl.innerHTML = '&#9679;';
+                    resultEl.textContent = 'running...';
+                    break;
+                case 'completed':
+                    el.classList.add('step-completed');
+                    iconEl.innerHTML = '&#10003;';
+                    const parts = [];
+                    if (step.result) {
+                        Object.entries(step.result).forEach(([k, v]) => {
+                            if (k !== 'elapsed') parts.push(`${k}=${v}`);
+                        });
+                    }
+                    resultEl.textContent = parts.join(', ') + (step.elapsed ? ` (${step.elapsed}s)` : '');
+                    break;
+                case 'failed':
+                    el.classList.add('step-failed');
+                    iconEl.innerHTML = '&#10007;';
+                    resultEl.textContent = step.error || 'failed';
+                    break;
+                case 'skipped':
+                    el.classList.add('step-skipped');
+                    iconEl.innerHTML = '&#8211;';
+                    resultEl.textContent = 'skipped';
+                    break;
+            }
+        });
+    }
+
+    function updateSummary(job) {
+        const el = document.getElementById('pipeline-summary');
+        if (job.status === 'completed') {
+            el.className = 'pipeline-summary summary-success';
+            el.textContent = `Pipeline completed in ${job.total_elapsed}s`;
+        } else if (job.status === 'failed') {
+            el.className = 'pipeline-summary summary-failed';
+            el.textContent = `Pipeline failed: ${job.error || 'unknown error'} (${job.total_elapsed}s)`;
+        } else if (job.status === 'running' && job.total_elapsed) {
+            el.className = 'pipeline-summary';
+            el.textContent = `Running... ${job.total_elapsed.toFixed(1)}s elapsed`;
+        }
+    }
+
+    // Update download link when chain changes
+    document.getElementById('upload-chain').addEventListener('change', function() {
+        document.getElementById('btn-download').href = '/api/download/' + this.value;
+    });
+})();
+</script>
+{% endblock %}

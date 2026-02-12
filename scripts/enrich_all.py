@@ -64,15 +64,18 @@ STEP_DESCRIPTIONS = {
 
 
 def load_chain_config(chain: str) -> dict:
-    """Load chain config from config/chains.json."""
+    """Load chain config from config/chains.json.
+
+    Raises ValueError if the chain is not found (instead of sys.exit)
+    so callers outside CLI (e.g., web UI) can catch the error gracefully.
+    """
     config_path = Path(__file__).parent.parent / "config" / "chains.json"
     with open(config_path) as f:
         config = json.load(f)
     for c in config["chains"]:
         if c["id"] == chain:
             return c
-    logger.error("Chain '%s' not found in config/chains.json", chain)
-    sys.exit(1)
+    raise ValueError(f"Chain '{chain}' not found in config/chains.json")
 
 
 def run_step_dedup(csv_path: Path, dry_run: bool, **kwargs) -> dict:
@@ -227,7 +230,11 @@ def main():
         sys.exit(1)
 
     # Load chain config
-    chain_config = load_chain_config(args.chain)
+    try:
+        chain_config = load_chain_config(args.chain)
+    except ValueError as e:
+        logger.error(str(e))
+        sys.exit(1)
     target_assets = (
         args.assets.split(",") if args.assets
         else chain_config.get("target_assets", ["USDT", "USDC"])
