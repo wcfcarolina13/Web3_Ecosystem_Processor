@@ -53,3 +53,11 @@ This is how Ralph maintains continuity across iterations.
 - General Stablecoin Adoption = TRUE: 100 rows
 - Notes cleaned: 884 rows (0 still have old prefix pattern)
 
+### Session 3 — 2026-02-12 (Manual)
+
+**Accomplished:**
+- **CSV deduplication** (`dedup_csv.py`): Normalized name + website domain grouping. 888 → 791 rows. 69 exact + 28 fuzzy dupes removed. Fuzzy merges annotated with "(fuzzy dedup: merged from X; Y)". Different-domain projects kept separate (e.g., AuroraSwap ≠ Aurora).
+- **Unified enrichment runner** (`enrich_all.py`): Single command orchestrates dedup → Grid → DefiLlama → CoinGecko → notes cleanup. Supports --skip, --only, --dry-run.
+- **Incremental mode**: All 3 enrichment scripts skip already-enriched rows + write in-place for pipeline composability.
+- **CoinGecko fuzzy matching**: Added separator-aware name lookup + fuzzy fallback (0.90 threshold). Fuzzy matches write ONLY to Notes as `[UNVERIFIED]` hints — isolated from high-confidence Evidence/asset columns. 1 new exact match, 2 fuzzy hints.
+
