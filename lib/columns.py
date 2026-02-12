@@ -34,6 +34,16 @@ CORRECT_COLUMNS = [
     "Evidence & Source URLs",
 ]
 
+# Minimal set of columns that every enrichment script depends on.
+# load_csv() validates these by default to catch malformed CSVs early.
+REQUIRED_COLUMNS = {
+    "Project Name",
+    "Website",
+    "Notes",
+    "Evidence & Source URLs",
+    "Source",
+}
+
 
 def empty_row(chain: str = "") -> dict:
     """Return an empty row dict with all columns initialized to ''."""

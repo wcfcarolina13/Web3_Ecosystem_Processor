@@ -11,7 +11,12 @@ from datetime import datetime
 from pathlib import Path
 from typing import List, Dict, Optional
 
-from .columns import CORRECT_COLUMNS
+from .columns import CORRECT_COLUMNS, REQUIRED_COLUMNS
+
+
+class CSVColumnError(Exception):
+    """Raised when a CSV is missing required columns."""
+    pass
 
 
 def sanitize_csv_field(value) -> str:
@@ -43,11 +48,25 @@ def sanitize_csv_field(value) -> str:
     return val
 
 
-def load_csv(csv_path: Path) -> List[Dict]:
-    """Load a CSV file and return list of dicts."""
+def load_csv(csv_path: Path, validate: bool = True) -> List[Dict]:
+    """
+    Load a CSV file and return list of dicts.
+
+    Args:
+        csv_path: Path to the CSV file.
+        validate: If True (default), check that REQUIRED_COLUMNS are present.
+                  Raises CSVColumnError if any are missing.
+    """
     rows = []
     with open(csv_path, "r", encoding="utf-8") as f:
         reader = csv.DictReader(f)
+        if validate and reader.fieldnames:
+            missing = REQUIRED_COLUMNS - set(reader.fieldnames)
+            if missing:
+                raise CSVColumnError(
+                    f"CSV {csv_path} missing required columns: "
+                    f"{', '.join(sorted(missing))}"
+                )
         for row in reader:
             rows.append(row)
     return rows
