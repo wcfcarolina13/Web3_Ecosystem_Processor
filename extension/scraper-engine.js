@@ -835,7 +835,9 @@
     }
 
     // Default strategy
-    return siteConfig.defaultStrategy || Object.keys(siteConfig.strategies)[0];
+    if (siteConfig.defaultStrategy) return siteConfig.defaultStrategy;
+    if (siteConfig.strategies) return Object.keys(siteConfig.strategies)[0];
+    return null;
   }
 
   // ==================== MAIN ORCHESTRATOR ====================
@@ -849,24 +851,21 @@
       // 1. Determine chain
       const chain = chainOverride || detectChainFromUrl(siteConfig) || siteConfig.defaultChain || '';
 
-      // 2. Determine strategy
-      const strategyName = selectStrategy(siteConfig);
-      const strategyConfig = siteConfig.strategies[strategyName];
-
-      if (!strategyConfig) {
-        throw new Error(`No strategy "${strategyName}" defined for ${siteConfig.name}`);
-      }
-
-      const context = { chain, chainOverride, siteConfig };
-      console.log(`[Ecosystem Scraper] Running ${siteConfig.name} → strategy: ${strategyName}, chain: ${chain || 'auto'}`);
-
-      // 3. Execute
+      // 2. Execute — customScrape bypasses the strategy system entirely
       if (siteConfig.customScrape) {
+        console.log(`[Ecosystem Scraper] Running ${siteConfig.name} → customScrape, chain: ${chain || 'auto'}`);
         scrapedProjects = await siteConfig.customScrape({
           sendMessage, sleep, reportProgress, extractSocialLinks,
           scrollToLoadAll, mapFields, getByPath, readPageGlobal, isScanning: () => isScanning
         });
       } else {
+        const strategyName = selectStrategy(siteConfig);
+        const strategyConfig = siteConfig.strategies[strategyName];
+        if (!strategyConfig) {
+          throw new Error(`No strategy "${strategyName}" defined for ${siteConfig.name}`);
+        }
+        const context = { chain, chainOverride, siteConfig };
+        console.log(`[Ecosystem Scraper] Running ${siteConfig.name} → strategy: ${strategyName}, chain: ${chain || 'auto'}`);
         const executor = STRATEGY_EXECUTORS[strategyName];
         if (!executor) throw new Error(`Unknown strategy type: ${strategyName}`);
         scrapedProjects = await executor(strategyConfig, context);
