@@ -11,6 +11,8 @@
   let siteConfigs = [];       // Loaded from registry
   let activeSiteConfig = null; // Current page's matched config
   let configsLoaded = false;
+  let configsReadyResolve;
+  const configsReady = new Promise(r => { configsReadyResolve = r; });
 
   // ==================== UTILITIES ====================
 
@@ -936,9 +938,11 @@
       }
 
       configsLoaded = true;
+      configsReadyResolve();
     } catch (err) {
       console.warn('[Ecosystem Scraper] Failed to load registry:', err.message);
-      configsLoaded = true; // Mark loaded even on failure so message listener works
+      configsLoaded = true;
+      configsReadyResolve(); // Resolve even on failure so message listener works
     }
   }
 
@@ -946,19 +950,22 @@
 
   chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     if (message.action === 'startScraping') {
-      if (!isScanning) {
-        const config = findMatchingConfig(window.location.href);
-        if (!config) {
-          sendResponse({ success: false, error: 'No scraper config for this site' });
-          return true;
+      // Wait for configs before matching
+      configsReady.then(() => {
+        if (!isScanning) {
+          const config = findMatchingConfig(window.location.href);
+          if (!config) {
+            sendResponse({ success: false, error: 'No scraper config for this site' });
+            return;
+          }
+          const chainOverride = message.chain ? message.chain.name : null;
+          runScraper(config, chainOverride);
+          sendResponse({ success: true });
+        } else {
+          sendResponse({ success: false, error: 'Already scanning' });
         }
-        const chainOverride = message.chain ? message.chain.name : null;
-        runScraper(config, chainOverride);
-        sendResponse({ success: true });
-      } else {
-        sendResponse({ success: false, error: 'Already scanning' });
-      }
-      return true;
+      });
+      return true; // Keep sendResponse channel open for async
     }
 
     if (message.action === 'stopScraping') {
@@ -968,24 +975,29 @@
     }
 
     if (message.action === 'getStatus') {
-      const config = findMatchingConfig(window.location.href);
-      sendResponse({
-        isScanning,
-        projectCount: scrapedProjects.length,
-        siteId: config ? config.id : null,
-        siteName: config ? config.name : null
+      configsReady.then(() => {
+        const config = findMatchingConfig(window.location.href);
+        sendResponse({
+          isScanning,
+          projectCount: scrapedProjects.length,
+          siteId: config ? config.id : null,
+          siteName: config ? config.name : null
+        });
       });
       return true;
     }
 
     if (message.action === 'getSiteConfig') {
-      const config = findMatchingConfig(window.location.href);
-      sendResponse({
-        matched: !!config,
-        siteId: config ? config.id : null,
-        siteName: config ? config.name : null
+      // Wait for configs to load before responding
+      configsReady.then(() => {
+        const config = findMatchingConfig(window.location.href);
+        sendResponse({
+          matched: !!config,
+          siteId: config ? config.id : null,
+          siteName: config ? config.name : null
+        });
       });
-      return true;
+      return true; // Keep sendResponse channel open for async
     }
 
     // --- Save URL for later (bookmark unconfigured sites) ---
