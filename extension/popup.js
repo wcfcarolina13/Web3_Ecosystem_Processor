@@ -252,15 +252,13 @@ function toCSV(data) {
       sourceSite,                                // Source
       notes,                                     // Notes
       ''                                         // Evidence URLs
-    ].map(val => {
+    ].map((val, colIdx) => {
       if (typeof val !== 'string') return val;
       // Sanitize: strip newlines, decode HTML entities, collapse whitespace
       val = val.replace(/[\r\n]+/g, ' ').replace(/\s+/g, ' ').trim();
       val = val.replace(/&amp;/g, '&').replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&#39;/g, "'").replace(/&quot;/g, '"');
-      // Escape CSV values
-      if (val.includes(',') || val.includes('"') || val.includes('\n')) {
-        return `"${val.replace(/"/g, '""')}"`;
-      }
+      // Strip commas from all fields to avoid CSV quoting issues with Google Sheets
+      val = val.replace(/,/g, ';');
       return val;
     }).join(',');
   });
