@@ -1,0 +1,10 @@
+{
+  "sites": [
+    "defillama.js",
+    "dappradar.js",
+    "coingecko.js",
+    "aptofolio.js",
+    "awesomenear.js",
+    "nearcatalog.js"
+  ]
+}

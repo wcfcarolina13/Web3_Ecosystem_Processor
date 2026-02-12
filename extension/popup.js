@@ -1,11 +1,15 @@
 // Popup script for Ecosystem Scraper extension
 
-const SUPPORTED_SITES = {
-  'aptofolio.com': 'AptoFolio',
-  'defillama.com': 'DefiLlama',
-  'dappradar.com': 'DappRadar',
-  'coingecko.com': 'CoinGecko'
-};
+// Dynamic site detection — no hardcoded list needed.
+// The scraper engine matches sites via config/sites/*.js configs.
+async function detectSite(tab) {
+  try {
+    const response = await chrome.tabs.sendMessage(tab.id, { action: 'getSiteConfig' });
+    return response && response.matched ? { id: response.siteId, name: response.siteName } : null;
+  } catch (e) {
+    return null;
+  }
+}
 
 let scrapedData = [];
 let isScanning = false;
@@ -72,16 +76,12 @@ async function init() {
   await loadChainsConfig();
 
   const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
-  const url = new URL(tab.url);
-  const hostname = url.hostname.replace('www.', '');
 
-  // Check if site is supported
-  const siteName = Object.entries(SUPPORTED_SITES).find(([domain]) =>
-    hostname.includes(domain)
-  );
+  // Ask the engine if this site is supported (dynamic detection)
+  const site = await detectSite(tab);
 
-  if (siteName) {
-    siteNameEl.textContent = siteName[1];
+  if (site) {
+    siteNameEl.textContent = site.name;
     mainContent.style.display = 'block';
     unsupportedContent.style.display = 'none';
 
