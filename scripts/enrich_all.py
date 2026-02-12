@@ -32,7 +32,7 @@ from lib.csv_utils import find_main_csv, load_csv
 # Lazy imports — only import each module when its step runs,
 # so a broken step doesn't block the others.
 
-STEPS = ["dedup", "grid", "defillama", "coingecko", "notes"]
+STEPS = ["dedup", "grid", "defillama", "coingecko", "notes", "sources"]
 
 STEP_DESCRIPTIONS = {
     "dedup": "Deduplicate rows (normalized name + website domain)",
@@ -40,6 +40,7 @@ STEP_DESCRIPTIONS = {
     "defillama": "DefiLlama token holdings + chain presence",
     "coingecko": "CoinGecko batch platform deployments",
     "notes": "Notes cleanup (strip prefixes, emojis, fluff)",
+    "sources": "Fix Source column (replace 'Generic Scraper' with actual source)",
 }
 
 
@@ -104,12 +105,20 @@ def run_step_notes(csv_path: Path, dry_run: bool, **kwargs) -> dict:
     return {"total": total, "cleaned": cleaned, "unchanged": unchanged}
 
 
+def run_step_sources(csv_path: Path, chain: str, dry_run: bool, **kwargs) -> dict:
+    """Fix 'Generic Scraper' in Source column."""
+    from scripts.fix_source_column import fix_sources
+    total, fixed, ok = fix_sources(csv_path, chain, dry_run=dry_run)
+    return {"total": total, "fixed": fixed, "already_ok": ok}
+
+
 STEP_RUNNERS = {
     "dedup": run_step_dedup,
     "grid": run_step_grid,
     "defillama": run_step_defillama,
     "coingecko": run_step_coingecko,
     "notes": run_step_notes,
+    "sources": run_step_sources,
 }
 
 

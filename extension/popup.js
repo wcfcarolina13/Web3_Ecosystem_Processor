@@ -43,6 +43,7 @@ let scrapedData = [];
 let isScanning = false;
 let chainsConfig = [];
 let selectedChain = null; // null = auto-detect
+let currentTabHostname = ''; // Actual hostname of the page being scraped
 
 // DOM elements
 const siteNameEl = document.getElementById('site-name');
@@ -104,6 +105,13 @@ async function init() {
   await loadChainsConfig();
 
   const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+
+  // Capture the actual page hostname for use as Source in CSV export
+  try {
+    currentTabHostname = new URL(tab.url).hostname.replace(/^www\./, '');
+  } catch (e) {
+    currentTabHostname = '';
+  }
 
   // Ask the engine if this site is supported (dynamic detection)
   const site = await detectSite(tab);
@@ -204,7 +212,14 @@ function toCSV(data) {
   ];
 
   const chainName = getSelectedChainName();
-  const sourceSite = siteNameEl.textContent || '';
+  const displayName = siteNameEl.textContent || '';
+
+  // Source = the actual data source site (e.g., "DefiLlama", "nearcatalog.xyz").
+  // For named configs, the config name IS the source.
+  // For generic scraper, use the page hostname (the actual website scraped).
+  const sourceSite = (displayName === 'Generic Scraper')
+    ? (currentTabHostname || 'Unknown')
+    : displayName;
 
   // DeFi categories that likely involve stablecoin/USDT support
   const defiCategories = new Set([
