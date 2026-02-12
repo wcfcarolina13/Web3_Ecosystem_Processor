@@ -7,7 +7,8 @@ Orchestrates:
   2. Grid asset enrichment (query Grid API for matched rows)
   3. DefiLlama enrichment (token holdings + chain presence)
   4. CoinGecko enrichment (batch platform deployments)
-  5. Notes cleanup (strip prefixes, emojis, fluff)
+  5. Website keyword scan (homepage HTML for asset/stablecoin keywords)
+  6. Notes cleanup (strip prefixes, emojis, fluff)
 
 Each step reads the same CSV, enriches in place, and writes back.
 Use --skip to skip specific steps. Use --dry-run to preview all steps.
@@ -32,13 +33,14 @@ from lib.csv_utils import find_main_csv, load_csv
 # Lazy imports — only import each module when its step runs,
 # so a broken step doesn't block the others.
 
-STEPS = ["dedup", "grid", "defillama", "coingecko", "notes", "sources"]
+STEPS = ["dedup", "grid", "defillama", "coingecko", "website", "notes", "sources"]
 
 STEP_DESCRIPTIONS = {
     "dedup": "Deduplicate rows (normalized name + website domain)",
     "grid": "Grid API asset enrichment (matched rows only)",
     "defillama": "DefiLlama token holdings + chain presence",
     "coingecko": "CoinGecko batch platform deployments",
+    "website": "Website keyword scan (homepage HTML for asset/stablecoin keywords)",
     "notes": "Notes cleanup (strip prefixes, emojis, fluff)",
     "sources": "Fix Source column (replace 'Generic Scraper' with actual source)",
 }
@@ -98,6 +100,19 @@ def run_step_coingecko(csv_path: Path, chain: str, target_assets: list,
     return {"total": total, "matched": matched, "enriched": enriched}
 
 
+def run_step_website(csv_path: Path, chain: str, target_assets: list,
+                     dry_run: bool, **kwargs) -> dict:
+    """Run website keyword scan enrichment."""
+    from scripts.enrich_website_keywords import enrich_csv
+    total, scanned, found, errors = enrich_csv(
+        csv_path, chain, target_assets, dry_run=dry_run,
+    )
+    return {
+        "total": total, "scanned": scanned,
+        "keywords_found": found, "fetch_errors": errors,
+    }
+
+
 def run_step_notes(csv_path: Path, dry_run: bool, **kwargs) -> dict:
     """Run Notes cleanup."""
     from scripts.clean_notes import run_cleanup
@@ -117,6 +132,7 @@ STEP_RUNNERS = {
     "grid": run_step_grid,
     "defillama": run_step_defillama,
     "coingecko": run_step_coingecko,
+    "website": run_step_website,
     "notes": run_step_notes,
     "sources": run_step_sources,
 }
