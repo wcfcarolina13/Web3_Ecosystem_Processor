@@ -159,17 +159,50 @@ def build_coin_catalog() -> Dict[str, dict]:
     return catalog
 
 
-def find_coin_in_catalog(project_name: str, catalog: Dict[str, dict]) -> Optional[dict]:
-    """Look up a project in the cached CoinGecko catalog."""
+def find_coin_in_catalog(
+    project_name: str,
+    catalog: Dict[str, dict],
+    catalog_keys: Optional[List[str]] = None,
+    fuzzy_threshold: float = 0.90,
+) -> Optional[tuple]:
+    """
+    Look up a project in the cached CoinGecko catalog.
+
+    Returns (coin_dict, match_method) or None.
+    match_method is "exact" for O(1) lookups, "fuzzy" for SequenceMatcher matches.
+    """
+    from difflib import get_close_matches
+
     # Try exact normalized name
     norm = normalize_name(project_name)
     if norm in catalog:
-        return catalog[norm]
+        return catalog[norm], "exact"
 
     # Try stripped suffix
     stripped = normalize_name(strip_suffixes(project_name))
     if stripped in catalog:
-        return catalog[stripped]
+        return catalog[stripped], "exact"
+
+    # Try first part before common separators (handles "RuneMine | Mine Labs")
+    for sep in [" | ", " - ", " / "]:
+        if sep in project_name:
+            first_part = project_name.split(sep)[0].strip()
+            first_norm = normalize_name(first_part)
+            if first_norm and first_norm in catalog:
+                return catalog[first_norm], "exact"
+
+    # Fuzzy fallback — only if catalog_keys provided
+    # Crypto names are notoriously similar (Bitget/Bitgert, Binance/bAInance)
+    # so false positives are common. We use a high threshold and mark results
+    # clearly as fuzzy so researchers can verify.
+    if catalog_keys and norm and len(norm) >= 7:
+        matches = get_close_matches(norm, catalog_keys, n=1, cutoff=max(fuzzy_threshold, 0.90))
+        if matches:
+            matched_key = matches[0]
+            # Guard: require similar length
+            len_ratio = min(len(norm), len(matched_key)) / max(len(norm), len(matched_key))
+            if len_ratio >= 0.75:
+                return catalog[matched_key], "fuzzy"
 
     return None
 
@@ -226,6 +259,9 @@ def enrich_csv(
         print("ERROR: Empty catalog, aborting.")
         return 0, 0, 0
 
+    # Pre-compute catalog keys list for fuzzy matching
+    catalog_keys = list(catalog.keys())
+
     # Load CSV
     print(f"\nLoading CSV: {csv_path}")
     rows = load_csv(csv_path)
@@ -247,11 +283,12 @@ def enrich_csv(
             skipped_incremental += 1
             continue
 
-        # O(1) lookup — no API call needed
-        coin = find_coin_in_catalog(name, catalog)
-        if not coin:
+        # O(1) lookup (exact) or fuzzy fallback
+        result = find_coin_in_catalog(name, catalog, catalog_keys=catalog_keys)
+        if not result:
             continue
 
+        coin, match_method = result
         cg_matched += 1
 
         # Detect platform assets
@@ -263,56 +300,73 @@ def enrich_csv(
 
         enriched += 1
         all_detected = set(platform_findings.keys())
+        is_fuzzy = match_method == "fuzzy"
 
         # Build updates
         updates = {}
 
-        # Stablecoin columns are not affected by platform detection alone
-        # (platform deployment != stablecoin holdings)
-        # But we do flag chain presence
-
-        # Build evidence
-        evidence_parts = []
-        for asset in target_assets:
-            if asset in platform_findings:
-                evidence_parts.append(f"{asset}: {platform_findings[asset]} (CoinGecko)")
-
-        if evidence_parts:
-            evidence = " | ".join(evidence_parts)
-            existing = row.get("Evidence & Source URLs", "").strip()
-            if existing:
-                if "CoinGecko" not in existing:
-                    updates["Evidence & Source URLs"] = f"{existing} | {evidence}"
-            else:
-                updates["Evidence & Source URLs"] = evidence
-
-        # Build notes
-        note_findings = []
-        if "SOL" in all_detected:
-            note_findings.append("Solana deployment (CoinGecko)")
-        if "STRK" in all_detected:
-            note_findings.append("Starknet deployment (CoinGecko)")
-        if "ADA" in all_detected:
-            note_findings.append("Cardano deployment (CoinGecko)")
-
-        if note_findings:
-            finding_text = "; ".join(note_findings)
+        if is_fuzzy:
+            # ── FUZZY MATCH: write ONLY to Notes as unverified hint ──
+            # Do NOT touch Evidence, asset columns, or Source.
+            # Researchers can verify and promote to high-confidence data.
+            asset_list = ", ".join(sorted(all_detected))
+            fuzzy_hint = (
+                f"[UNVERIFIED] CoinGecko fuzzy match: \"{coin['name']}\" "
+                f"({coin['id']}) — {asset_list} deployment detected"
+            )
             existing_notes = row.get("Notes", "").strip()
             if existing_notes:
-                if finding_text not in existing_notes and "CoinGecko" not in existing_notes:
-                    updates["Notes"] = f"{existing_notes} | {finding_text}"
+                if "CoinGecko fuzzy" not in existing_notes:
+                    updates["Notes"] = f"{existing_notes} | {fuzzy_hint}"
             else:
-                updates["Notes"] = finding_text
+                updates["Notes"] = fuzzy_hint
 
-        # Update source to include CoinGecko
-        existing_source = row.get("Source", "").strip()
-        if "CoinGecko" not in existing_source:
-            if existing_source:
-                updates["Source"] = f"{existing_source}; CoinGecko"
-            else:
-                updates["Source"] = "CoinGecko"
+        else:
+            # ── EXACT MATCH: write to all high-confidence columns ──
 
-        print(f"  {name} -> {coin['name']} ({coin['id']}): {', '.join(sorted(all_detected))}")
+            # Build evidence
+            evidence_parts = []
+            for asset in target_assets:
+                if asset in platform_findings:
+                    evidence_parts.append(f"{asset}: {platform_findings[asset]} (CoinGecko)")
+
+            if evidence_parts:
+                evidence = " | ".join(evidence_parts)
+                existing = row.get("Evidence & Source URLs", "").strip()
+                if existing:
+                    if "CoinGecko" not in existing:
+                        updates["Evidence & Source URLs"] = f"{existing} | {evidence}"
+                else:
+                    updates["Evidence & Source URLs"] = evidence
+
+            # Build notes
+            note_findings = []
+            if "SOL" in all_detected:
+                note_findings.append("Solana deployment (CoinGecko)")
+            if "STRK" in all_detected:
+                note_findings.append("Starknet deployment (CoinGecko)")
+            if "ADA" in all_detected:
+                note_findings.append("Cardano deployment (CoinGecko)")
+
+            if note_findings:
+                finding_text = "; ".join(note_findings)
+                existing_notes = row.get("Notes", "").strip()
+                if existing_notes:
+                    if finding_text not in existing_notes and "CoinGecko" not in existing_notes:
+                        updates["Notes"] = f"{existing_notes} | {finding_text}"
+                else:
+                    updates["Notes"] = finding_text
+
+            # Update source to include CoinGecko (exact matches only)
+            existing_source = row.get("Source", "").strip()
+            if "CoinGecko" not in existing_source:
+                if existing_source:
+                    updates["Source"] = f"{existing_source}; CoinGecko"
+                else:
+                    updates["Source"] = "CoinGecko"
+
+        match_label = f" [fuzzy]" if is_fuzzy else ""
+        print(f"  {name} -> {coin['name']} ({coin['id']}): {', '.join(sorted(all_detected))}{match_label}")
 
         if not dry_run:
             row.update(updates)
