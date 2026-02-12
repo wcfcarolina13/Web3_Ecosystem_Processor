@@ -8,7 +8,8 @@ Orchestrates:
   3. DefiLlama enrichment (token holdings + chain presence)
   4. CoinGecko enrichment (batch platform deployments)
   5. Website keyword scan (homepage HTML for asset/stablecoin keywords)
-  6. Notes cleanup (strip prefixes, emojis, fluff)
+  6. Hint promotion (promote website-scan findings to boolean columns)
+  7. Notes cleanup (strip prefixes, emojis, fluff)
 
 Each step reads the same CSV, enriches in place, and writes back.
 Use --skip to skip specific steps. Use --dry-run to preview all steps.
@@ -33,7 +34,7 @@ from lib.csv_utils import find_main_csv, load_csv
 # Lazy imports — only import each module when its step runs,
 # so a broken step doesn't block the others.
 
-STEPS = ["dedup", "grid", "defillama", "coingecko", "website", "notes", "sources"]
+STEPS = ["dedup", "grid", "defillama", "coingecko", "website", "promote", "notes", "sources"]
 
 STEP_DESCRIPTIONS = {
     "dedup": "Deduplicate rows (normalized name + website domain)",
@@ -41,6 +42,7 @@ STEP_DESCRIPTIONS = {
     "defillama": "DefiLlama token holdings + chain presence",
     "coingecko": "CoinGecko batch platform deployments",
     "website": "Website keyword scan (homepage HTML for asset/stablecoin keywords)",
+    "promote": "Promote high-confidence website-scan hints to boolean columns",
     "notes": "Notes cleanup (strip prefixes, emojis, fluff)",
     "sources": "Fix Source column (replace 'Generic Scraper' with actual source)",
 }
@@ -113,6 +115,19 @@ def run_step_website(csv_path: Path, chain: str, target_assets: list,
     }
 
 
+def run_step_promote(csv_path: Path, chain: str, dry_run: bool, **kwargs) -> dict:
+    """Promote high-confidence website-scan hints to boolean columns."""
+    from scripts.promote_hints import promote_hints
+    total, candidates, usdt, stablecoin, web3 = promote_hints(
+        csv_path, chain, dry_run=dry_run,
+    )
+    return {
+        "total": total, "candidates": candidates,
+        "promoted_usdt": usdt, "promoted_stablecoin": stablecoin,
+        "promoted_web3": web3,
+    }
+
+
 def run_step_notes(csv_path: Path, dry_run: bool, **kwargs) -> dict:
     """Run Notes cleanup."""
     from scripts.clean_notes import run_cleanup
@@ -133,6 +148,7 @@ STEP_RUNNERS = {
     "defillama": run_step_defillama,
     "coingecko": run_step_coingecko,
     "website": run_step_website,
+    "promote": run_step_promote,
     "notes": run_step_notes,
     "sources": run_step_sources,
 }
