@@ -31,6 +31,9 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
 from lib.csv_utils import find_main_csv, load_csv
+from lib.logging_config import get_logger, configure_logging
+
+logger = get_logger(__name__)
 
 # Lazy imports — only import each module when its step runs,
 # so a broken step doesn't block the others.
@@ -58,7 +61,7 @@ def load_chain_config(chain: str) -> dict:
     for c in config["chains"]:
         if c["id"] == chain:
             return c
-    print(f"Error: Chain '{chain}' not found in config/chains.json")
+    logger.error("Chain '%s' not found in config/chains.json", chain)
     sys.exit(1)
 
 
@@ -188,17 +191,25 @@ def main():
                         help="Override target assets (comma-separated, e.g., USDT,USDC)")
     args = parser.parse_args()
 
+    # Configure logging (file logging only when not dry-run)
+    log_file = None
+    if not args.dry_run:
+        data_dir = Path(__file__).parent.parent / "data" / args.chain.lower()
+        if data_dir.exists():
+            log_file = data_dir / "pipeline.log"
+    configure_logging(log_file=log_file)
+
     # Resolve CSV path
     if args.csv:
         csv_path = Path(args.csv)
     else:
         csv_path = find_main_csv(args.chain)
         if not csv_path:
-            print(f"Error: No CSV found in data/{args.chain}/")
+            logger.error("No CSV found in data/%s/", args.chain)
             sys.exit(1)
 
     if not csv_path.exists():
-        print(f"Error: CSV not found: {csv_path}")
+        logger.error("CSV not found: %s", csv_path)
         sys.exit(1)
 
     # Load chain config
@@ -213,7 +224,7 @@ def main():
         steps_to_run = [s.strip() for s in args.only.split(",")]
         for s in steps_to_run:
             if s not in STEPS:
-                print(f"Error: Unknown step '{s}'. Valid: {', '.join(STEPS)}")
+                logger.error("Unknown step '%s'. Valid: %s", s, ", ".join(STEPS))
                 sys.exit(1)
     else:
         skip = set(s.strip() for s in args.skip.split(",") if s.strip())
@@ -221,15 +232,14 @@ def main():
 
     # Show plan
     rows = load_csv(csv_path)
-    print(f"{'='*60}")
-    print(f"ENRICHMENT PIPELINE — {args.chain.upper()}")
-    print(f"{'='*60}")
-    print(f"CSV: {csv_path} ({len(rows)} rows)")
-    print(f"Target assets: {', '.join(target_assets)}")
-    print(f"Steps: {' → '.join(steps_to_run)}")
+    logger.info("=" * 60)
+    logger.info("ENRICHMENT PIPELINE — %s", args.chain.upper())
+    logger.info("=" * 60)
+    logger.info("CSV: %s (%d rows)", csv_path, len(rows))
+    logger.info("Target assets: %s", ", ".join(target_assets))
+    logger.info("Steps: %s", " → ".join(steps_to_run))
     if args.dry_run:
-        print(f"Mode: DRY RUN (no files written)")
-    print()
+        logger.info("Mode: DRY RUN (no files written)")
 
     # Run each step
     results = {}
@@ -237,9 +247,9 @@ def main():
 
     for step in steps_to_run:
         desc = STEP_DESCRIPTIONS[step]
-        print(f"{'─'*60}")
-        print(f"STEP: {step} — {desc}")
-        print(f"{'─'*60}")
+        logger.info("─" * 60)
+        logger.info("STEP: %s — %s", step, desc)
+        logger.info("─" * 60)
 
         step_start = time.time()
         runner = STEP_RUNNERS[step]
@@ -254,33 +264,28 @@ def main():
             elapsed = time.time() - step_start
             result["elapsed"] = f"{elapsed:.1f}s"
             results[step] = result
-            print(f"  ✓ {step} completed in {elapsed:.1f}s")
+            logger.info("  ✓ %s completed in %.1fs", step, elapsed)
         except Exception as e:
             elapsed = time.time() - step_start
             results[step] = {"error": str(e), "elapsed": f"{elapsed:.1f}s"}
-            print(f"  ✗ {step} FAILED in {elapsed:.1f}s: {e}")
-            import traceback
-            traceback.print_exc()
-
-        print()
+            logger.error("  ✗ %s FAILED in %.1fs: %s", step, elapsed, e, exc_info=True)
 
     # Summary
     total_elapsed = time.time() - total_start
-    print(f"{'='*60}")
-    print(f"PIPELINE SUMMARY — {total_elapsed:.1f}s total")
-    print(f"{'='*60}")
+    logger.info("=" * 60)
+    logger.info("PIPELINE SUMMARY — %.1fs total", total_elapsed)
+    logger.info("=" * 60)
 
     for step in steps_to_run:
         r = results.get(step, {})
         if "error" in r:
-            print(f"  {step}: FAILED — {r['error']}")
+            logger.info("  %s: FAILED — %s", step, r["error"])
         else:
-            # Format result nicely
             parts = [f"{k}={v}" for k, v in r.items() if k != "elapsed"]
-            print(f"  {step}: {', '.join(parts)} ({r.get('elapsed', '?')})")
+            logger.info("  %s: %s (%s)", step, ", ".join(parts), r.get("elapsed", "?"))
 
     if args.dry_run:
-        print(f"\n[DRY RUN] No files were written. Re-run without --dry-run.")
+        logger.info("[DRY RUN] No files were written. Re-run without --dry-run.")
 
 
 if __name__ == "__main__":
