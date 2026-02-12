@@ -61,3 +61,16 @@ This is how Ralph maintains continuity across iterations.
 - **Incremental mode**: All 3 enrichment scripts skip already-enriched rows + write in-place for pipeline composability.
 - **CoinGecko fuzzy matching**: Added separator-aware name lookup + fuzzy fallback (0.90 threshold). Fuzzy matches write ONLY to Notes as `[UNVERIFIED]` hints — isolated from high-confidence Evidence/asset columns. 1 new exact match, 2 fuzzy hints.
 
+### Session 4 — 2026-02-12 (Manual)
+
+**Accomplished:**
+- **Source column fix**: Replaced "Generic Scraper" with actual source website hostname in both the extension (`popup.js`) and existing CSV data. 9 NEAR rows fixed (→ "wallet.near.org"). New `fix_source_column.py` script added as "sources" step in `enrich_all.py` pipeline.
+- **Dedup source annotation**: `dedup_csv.py` now annotates Notes with merged source info for ALL dedup merges (not just fuzzy). Format: "(dedup: merged N rows | sources: X; Y)" for exact merges, "(fuzzy dedup: merged from A; B | sources: X; Y)" for fuzzy.
+- **Generic scraper v2**: Major enhancements to the generic discovery scraper:
+  - Scroll-to-load before extraction (up to 10 scrolls)
+  - Multiple JSON sources: __NEXT_DATA__ + `<script type="application/json">` + map-style objects
+  - HTML table extraction with column header analysis
+  - Enhanced link pattern detection with expanded Web3 slug keywords
+  - Richer card extraction: description, category, social links per card
+  - Better project field extraction: nested profiles, linktree socials, Twitter URL→handle normalization
+
