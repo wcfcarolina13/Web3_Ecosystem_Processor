@@ -52,17 +52,25 @@
       const clean = String(val).replace(/^@/, '').trim();
       return clean ? `@${clean}` : '';
     },
-    joinComma: (val) => Array.isArray(val) ? val.join(', ') : (val || ''),
+    joinComma: (val) => Array.isArray(val) ? val.join('; ') : (val || ''),
     trim: (val) => (val || '').trim(),
     firstWord: (val) => (val || '').trim().split(/\s+/)[0] || '',
     stripTicker: (val) => (val || '').replace(/\s+\$?[A-Z]{2,10}$/, '').trim(),
     objectKeys: (val) => {
       if (val && typeof val === 'object' && !Array.isArray(val)) {
-        return Object.values(val).join(', ');
+        return Object.values(val).join('; ');
       }
-      return Array.isArray(val) ? val.join(', ') : (val || '');
+      return Array.isArray(val) ? val.join('; ') : (val || '');
     }
   };
+
+  // Coerce any value to a CSV-safe string (arrays → semicolon-separated)
+  function csvSafe(val) {
+    if (val === null || val === undefined) return '';
+    if (Array.isArray(val)) return val.join('; ');
+    if (typeof val === 'object') return Object.values(val).join('; ');
+    return String(val);
+  }
 
   // ==================== FIELD MAPPING ====================
 
@@ -79,7 +87,7 @@
 
       // Simple string: direct field lookup
       if (typeof mapping === 'string') {
-        result[targetField] = getByPath(sourceItem, mapping) || '';
+        result[targetField] = csvSafe(getByPath(sourceItem, mapping));
         continue;
       }
 
@@ -93,13 +101,13 @@
             val = TRANSFORMS[mapping.transform](val);
           }
         }
-        result[targetField] = val || '';
+        result[targetField] = csvSafe(val);
         continue;
       }
 
       // Function: custom extraction
       if (typeof mapping === 'function') {
-        result[targetField] = mapping(sourceItem, context) || '';
+        result[targetField] = csvSafe(mapping(sourceItem, context));
       }
     }
     return result;
@@ -761,8 +769,8 @@
     }
 
     let category = item.category || item.categories || item.tags || item.type || '';
-    if (Array.isArray(category)) category = category.join(', ');
-    if (typeof category === 'object') category = Object.keys(category).join(', ');
+    if (Array.isArray(category)) category = category.join('; ');
+    if (typeof category === 'object') category = Object.keys(category).join('; ');
 
     return {
       name: String(name).substring(0, 100),
@@ -774,7 +782,7 @@
       telegram: item.telegram || '',
       discord: item.discord || '',
       github: item.github || '',
-      chain: item.chain || item.network || item.chains || ''
+      chain: csvSafe(item.chain || item.network || item.chains || '')
     };
   }
 
