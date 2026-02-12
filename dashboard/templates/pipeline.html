@@ -6,9 +6,82 @@
 <div class="pipeline-section">
     <h2>Enrichment Pipeline</h2>
 
-    <!-- Upload Panel -->
+    <!-- Panel 0: Add New Chain -->
+    <div class="panel add-chain-panel">
+        <h3>0. Add New Chain</h3>
+        <div class="upload-controls">
+            <div class="filter-group">
+                <label for="new-chain-id">Chain ID</label>
+                <input type="text" id="new-chain-id" placeholder="e.g. solana" pattern="[a-z0-9\-]+">
+            </div>
+            <div class="filter-group">
+                <label for="new-chain-name">Display Name</label>
+                <input type="text" id="new-chain-name" placeholder="e.g. Solana">
+            </div>
+            <div class="filter-group">
+                <label for="new-chain-slug">DefiLlama Slug</label>
+                <input type="text" id="new-chain-slug" placeholder="e.g. Solana">
+            </div>
+            <div class="filter-group">
+                <label for="new-chain-assets">Target Assets</label>
+                <input type="text" id="new-chain-assets" placeholder="USDT,USDC" value="USDT,USDC">
+            </div>
+            <button class="btn" id="btn-add-chain" onclick="addChain()">Add Chain</button>
+        </div>
+        <div id="add-chain-status" class="status-msg"></div>
+        <details class="slug-help">
+            <summary>Common DefiLlama slugs</summary>
+            <table class="slug-table">
+                <tr><td>Ethereum</td><td>Solana</td><td>Polygon</td><td>Arbitrum</td></tr>
+                <tr><td>Base</td><td>Optimism</td><td>BSC</td><td>Avalanche</td></tr>
+                <tr><td>Cardano</td><td>Aptos</td><td>Sui</td><td>Near</td></tr>
+                <tr><td>Fantom</td><td>Tron</td><td>Cosmos</td><td>Polkadot</td></tr>
+            </table>
+            <small class="slug-hint">Case-sensitive. Check <a href="https://defillama.com/chains" target="_blank">defillama.com/chains</a> for the exact name.</small>
+        </details>
+    </div>
+
+    <!-- Panel 1: Discover Projects -->
+    <div class="panel discover-panel">
+        <h3>1. Discover Projects</h3>
+        <div class="upload-controls">
+            <div class="filter-group">
+                <label for="discover-chain">Chain</label>
+                <select id="discover-chain" onchange="loadSources()">
+                    {% for c in chain_data %}
+                    <option value="{{ c.id }}" {% if c.id == chain %}selected{% endif %}
+                            data-rows="{{ c.row_count }}" data-has-data="{{ c.has_data|lower }}">
+                        {{ c.name }}{% if c.has_data %} ({{ c.row_count }} rows){% endif %}
+                    </option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="filter-group">
+                <label>Sources</label>
+                <div id="discover-sources" class="source-checkboxes">
+                    <label class="step-checkbox">
+                        <input type="checkbox" name="discover-source" value="defillama" checked>
+                        <span class="step-name">DefiLlama</span>
+                        <span class="step-desc">DeFi protocols with TVL</span>
+                    </label>
+                </div>
+            </div>
+            <button class="btn btn-discover" id="btn-discover" onclick="startDiscovery()">
+                Discover
+            </button>
+        </div>
+        <div id="discover-progress" class="discover-progress" style="display: none;">
+            <div class="progress-bar-container">
+                <div class="progress-bar" id="discover-bar"></div>
+            </div>
+            <div id="discover-message" class="status-msg"></div>
+        </div>
+        <div id="discover-result" class="status-msg"></div>
+    </div>
+
+    <!-- Panel 2: Upload CSV -->
     <div class="panel upload-panel">
-        <h3>1. Upload CSV</h3>
+        <h3>2. Upload CSV</h3>
         <div class="upload-controls">
             <div class="filter-group">
                 <label for="upload-chain">Chain</label>
@@ -30,9 +103,9 @@
         <div id="upload-status" class="status-msg"></div>
     </div>
 
-    <!-- Enrichment Controls -->
+    <!-- Panel 3: Enrichment Controls -->
     <div class="panel controls-panel">
-        <h3>2. Configure &amp; Run</h3>
+        <h3>3. Configure &amp; Run</h3>
         <div class="step-checkboxes">
             {% for s in steps %}
             <label class="step-checkbox">
@@ -53,9 +126,9 @@
         </div>
     </div>
 
-    <!-- Progress Panel -->
+    <!-- Panel 4: Progress -->
     <div class="panel progress-panel" id="progress-panel" style="display: none;">
-        <h3>3. Progress</h3>
+        <h3>4. Progress</h3>
         <div class="step-list" id="step-list"></div>
         <div class="pipeline-summary" id="pipeline-summary"></div>
     </div>
@@ -67,6 +140,205 @@
 (function() {
     let currentJobId = null;
     let pollTimer = null;
+    let discoveryJobId = null;
+    let discoveryPollTimer = null;
+
+    // ── Add Chain ──
+
+    window.addChain = function() {
+        const id = document.getElementById('new-chain-id').value.trim().toLowerCase();
+        const name = document.getElementById('new-chain-name').value.trim();
+        const slug = document.getElementById('new-chain-slug').value.trim();
+        const assets = document.getElementById('new-chain-assets').value.trim();
+        const statusEl = document.getElementById('add-chain-status');
+
+        if (!id || !name || !slug) {
+            statusEl.textContent = 'Please fill in Chain ID, Display Name, and DefiLlama Slug.';
+            statusEl.className = 'status-msg error';
+            return;
+        }
+
+        statusEl.textContent = 'Adding chain...';
+        statusEl.className = 'status-msg';
+        document.getElementById('btn-add-chain').disabled = true;
+
+        fetch('/api/chains/add', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                id: id,
+                name: name,
+                defillama_slug: slug,
+                target_assets: assets,
+            }),
+        })
+        .then(r => r.json().then(d => ({ ok: r.ok, data: d })))
+        .then(({ ok, data }) => {
+            if (ok) {
+                statusEl.textContent = data.message + ' — reloading...';
+                statusEl.className = 'status-msg success';
+                setTimeout(() => window.location.reload(), 1000);
+            } else {
+                statusEl.textContent = data.error || 'Failed to add chain';
+                statusEl.className = 'status-msg error';
+                document.getElementById('btn-add-chain').disabled = false;
+            }
+        })
+        .catch(err => {
+            statusEl.textContent = 'Network error: ' + err.message;
+            statusEl.className = 'status-msg error';
+            document.getElementById('btn-add-chain').disabled = false;
+        });
+    };
+
+    // ── Discover Projects ──
+
+    window.loadSources = function() {
+        const chain = document.getElementById('discover-chain').value;
+        fetch(`/api/discover/sources/${chain}`)
+            .then(r => r.json())
+            .then(sources => {
+                const container = document.getElementById('discover-sources');
+                container.innerHTML = sources.map(s => `
+                    <label class="step-checkbox">
+                        <input type="checkbox" name="discover-source" value="${s.id}" checked>
+                        <span class="step-name">${s.name}</span>
+                        <span class="step-desc">${s.description}</span>
+                    </label>
+                `).join('');
+            })
+            .catch(() => {});
+    };
+
+    window.startDiscovery = function() {
+        const chain = document.getElementById('discover-chain').value;
+        const checkboxes = document.querySelectorAll('input[name="discover-source"]:checked');
+        const sources = Array.from(checkboxes).map(cb => cb.value);
+        const resultEl = document.getElementById('discover-result');
+
+        if (!sources.length) {
+            resultEl.textContent = 'Please select at least one source.';
+            resultEl.className = 'status-msg error';
+            return;
+        }
+
+        const btn = document.getElementById('btn-discover');
+        btn.disabled = true;
+        btn.textContent = 'Discovering...';
+        resultEl.textContent = '';
+        resultEl.className = 'status-msg';
+
+        fetch('/api/discover/start', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ chain, sources }),
+        })
+        .then(r => r.json().then(d => ({ ok: r.ok, data: d })))
+        .then(({ ok, data }) => {
+            if (ok) {
+                discoveryJobId = data.job_id;
+                showDiscoverProgress();
+                startDiscoveryPolling();
+            } else {
+                resultEl.textContent = data.error || 'Failed to start discovery';
+                resultEl.className = 'status-msg error';
+                btn.disabled = false;
+                btn.textContent = 'Discover';
+            }
+        })
+        .catch(err => {
+            resultEl.textContent = 'Network error: ' + err.message;
+            resultEl.className = 'status-msg error';
+            btn.disabled = false;
+            btn.textContent = 'Discover';
+        });
+    };
+
+    function showDiscoverProgress() {
+        document.getElementById('discover-progress').style.display = '';
+        document.getElementById('discover-bar').style.width = '0%';
+        document.getElementById('discover-message').textContent = 'Starting discovery...';
+    }
+
+    function startDiscoveryPolling() {
+        if (discoveryPollTimer) clearInterval(discoveryPollTimer);
+        discoveryPollTimer = setInterval(pollDiscovery, 1500);
+        pollDiscovery();
+    }
+
+    function pollDiscovery() {
+        if (!discoveryJobId) return;
+
+        fetch(`/api/discover/status/${discoveryJobId}`)
+            .then(r => r.json())
+            .then(job => {
+                const bar = document.getElementById('discover-bar');
+                const msg = document.getElementById('discover-message');
+                const resultEl = document.getElementById('discover-result');
+
+                msg.textContent = job.progress_message || '';
+
+                if (job.progress_total > 0) {
+                    const pct = Math.round((job.progress / job.progress_total) * 100);
+                    bar.style.width = pct + '%';
+                } else if (job.status === 'running') {
+                    bar.style.width = '30%'; // indeterminate
+                }
+
+                if (job.status === 'completed') {
+                    bar.style.width = '100%';
+                    clearInterval(discoveryPollTimer);
+                    discoveryPollTimer = null;
+
+                    const r = job.result || {};
+                    resultEl.textContent = `Added ${r.added || 0} projects (${r.duplicates || 0} duplicates skipped). Total: ${r.total_rows || 0} rows.`;
+                    resultEl.className = 'status-msg success';
+
+                    const btn = document.getElementById('btn-discover');
+                    btn.disabled = false;
+                    btn.textContent = 'Discover';
+
+                    // Refresh chain dropdowns to show new row counts
+                    refreshChainDropdowns();
+                } else if (job.status === 'failed') {
+                    bar.style.width = '100%';
+                    bar.classList.add('progress-bar-error');
+                    clearInterval(discoveryPollTimer);
+                    discoveryPollTimer = null;
+
+                    resultEl.textContent = 'Discovery failed: ' + (job.error || 'unknown error');
+                    resultEl.className = 'status-msg error';
+
+                    const btn = document.getElementById('btn-discover');
+                    btn.disabled = false;
+                    btn.textContent = 'Discover';
+                }
+            })
+            .catch(() => {});
+    }
+
+    function refreshChainDropdowns() {
+        fetch('/api/chains')
+            .then(r => r.json())
+            .then(chains => {
+                ['upload-chain', 'discover-chain'].forEach(selectId => {
+                    const select = document.getElementById(selectId);
+                    if (!select) return;
+                    const currentVal = select.value;
+                    select.innerHTML = chains.map(c => {
+                        const label = c.has_data ? `${c.name} (${c.row_count} rows)` : c.name;
+                        const selected = c.id === currentVal ? ' selected' : '';
+                        return `<option value="${c.id}"${selected}>${label}</option>`;
+                    }).join('');
+                });
+                // Update download link
+                const dlBtn = document.getElementById('btn-download');
+                if (dlBtn) dlBtn.href = '/api/download/' + document.getElementById('upload-chain').value;
+            })
+            .catch(() => {});
+    }
+
+    // ── Upload CSV ──
 
     window.uploadCSV = function() {
         const chain = document.getElementById('upload-chain').value;
@@ -93,9 +365,7 @@
                 if (ok) {
                     statusEl.textContent = data.message;
                     statusEl.className = 'status-msg success';
-                    // Update chain dropdown row count
-                    const opt = document.querySelector(`#upload-chain option[value="${chain}"]`);
-                    if (opt) opt.textContent = `${opt.textContent.split('(')[0].trim()} (${data.rows} rows)`;
+                    refreshChainDropdowns();
                 } else {
                     statusEl.textContent = data.error || 'Upload failed';
                     statusEl.className = 'status-msg error';
@@ -108,6 +378,8 @@
                 document.getElementById('btn-upload').disabled = false;
             });
     };
+
+    // ── Pipeline ──
 
     window.startPipeline = function() {
         const chain = document.getElementById('upload-chain').value;
@@ -247,6 +519,9 @@
     document.getElementById('upload-chain').addEventListener('change', function() {
         document.getElementById('btn-download').href = '/api/download/' + this.value;
     });
+
+    // Load sources on page load
+    loadSources();
 })();
 </script>
 {% endblock %}

@@ -15,6 +15,7 @@
                 <a href="/?chain={{ chain }}" class="{% if request.path == '/' %}active{% endif %}">Dashboard</a>
                 <a href="/table?chain={{ chain }}" class="{% if request.path == '/table' %}active{% endif %}">Projects</a>
                 <a href="/pipeline?chain={{ chain }}" class="{% if request.path == '/pipeline' %}active{% endif %}">Pipeline</a>
+                <a href="/guide?chain={{ chain }}" class="{% if request.path == '/guide' %}active{% endif %}">Guide</a>
                 <form id="chain-form" method="get" action="{{ request.path }}">
                     <select name="chain" onchange="this.form.submit()">
                         {% for c in chains %}

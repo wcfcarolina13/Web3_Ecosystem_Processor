@@ -1,0 +1,361 @@
+{% extends "base.html" %}
+
+{% block title %}Guide — Ecosystem Research{% endblock %}
+
+{% block content %}
+<div class="guide-page">
+    <h2>User Guide</h2>
+
+    <nav class="guide-toc">
+        <strong>Contents</strong>
+        <ol>
+            <li><a href="#getting-started">Getting Started</a></li>
+            <li><a href="#add-chain">Add a Chain</a></li>
+            <li><a href="#discover">Discover Projects</a></li>
+            <li><a href="#extension">Chrome Extension (Optional)</a></li>
+            <li><a href="#upload">Upload Additional Data</a></li>
+            <li><a href="#enrichment">Run Enrichment</a></li>
+            <li><a href="#review">Review &amp; Download</a></li>
+            <li><a href="#columns">Column Reference</a></li>
+            <li><a href="#troubleshooting">Troubleshooting</a></li>
+        </ol>
+    </nav>
+
+    <!-- 1. Getting Started -->
+    <section id="getting-started" class="guide-section">
+        <h3>1. Getting Started</h3>
+        <p>
+            The Ecosystem Research tool helps you discover, enrich, and analyze Web3 projects
+            across any blockchain ecosystem. The typical workflow is:
+        </p>
+        <ol class="guide-steps">
+            <li><strong>Add a chain</strong> — Register a new ecosystem (e.g., Solana, Polygon)</li>
+            <li><strong>Discover projects</strong> — Pull projects from DefiLlama automatically</li>
+            <li><strong>Upload extra data</strong> — Optionally add projects from other sources (CSV)</li>
+            <li><strong>Run enrichment</strong> — Match projects against The Grid, scan websites, detect assets</li>
+            <li><strong>Review results</strong> — Use the Dashboard and Projects table to analyze findings</li>
+        </ol>
+        <div class="guide-callout">
+            <strong>No extension needed for basic workflow.</strong>
+            Steps 1–5 work entirely in the browser using server-side APIs.
+            The Chrome extension is only needed for scraping additional sources
+            (DappRadar, CoinGecko, etc.) that require browser-based access.
+        </div>
+    </section>
+
+    <!-- 2. Add a Chain -->
+    <section id="add-chain" class="guide-section">
+        <h3>2. Add a Chain</h3>
+        <p>
+            Go to <a href="/pipeline">Pipeline</a> → <strong>Panel 0: Add New Chain</strong>.
+        </p>
+        <table class="guide-table">
+            <tr><th>Field</th><th>Example</th><th>Notes</th></tr>
+            <tr>
+                <td>Chain ID</td>
+                <td><code>solana</code></td>
+                <td>Lowercase, alphanumeric, hyphens OK. Used as folder name.</td>
+            </tr>
+            <tr>
+                <td>Display Name</td>
+                <td><code>Solana</code></td>
+                <td>Shown in dropdowns and headers.</td>
+            </tr>
+            <tr>
+                <td>DefiLlama Slug</td>
+                <td><code>Solana</code></td>
+                <td>Case-sensitive. Must match DefiLlama exactly.</td>
+            </tr>
+            <tr>
+                <td>Target Assets</td>
+                <td><code>USDT,USDC</code></td>
+                <td>Comma-separated tokens to detect during enrichment.</td>
+            </tr>
+        </table>
+        <p>
+            <strong>Common DefiLlama slugs:</strong>
+            Ethereum, Solana, Polygon, Arbitrum, Base, Optimism, BSC, Avalanche,
+            Cardano, Aptos, Sui, Near, Fantom, Tron, Cosmos, Polkadot.
+        </p>
+        <p>
+            Check <a href="https://defillama.com/chains" target="_blank">defillama.com/chains</a>
+            for the exact slug — it's case-sensitive.
+        </p>
+    </section>
+
+    <!-- 3. Discover Projects -->
+    <section id="discover" class="guide-section">
+        <h3>3. Discover Projects</h3>
+        <p>
+            Go to <a href="/pipeline">Pipeline</a> → <strong>Panel 1: Discover Projects</strong>.
+        </p>
+        <p>
+            Select a chain and check the sources you want (currently DefiLlama).
+            Click <strong>Discover</strong> to start. The server fetches project data
+            from the API and merges it into your CSV, skipping duplicates.
+        </p>
+        <h4>What DefiLlama provides:</h4>
+        <ul>
+            <li>Project name and website URL</li>
+            <li>Twitter/X handle</li>
+            <li>Category (DEX, Lending, Bridge, etc.)</li>
+            <li>Total Value Locked (TVL)</li>
+            <li>Link to DefiLlama protocol page</li>
+        </ul>
+        <p>
+            Typical results: 50–400 DeFi protocols per chain.
+            For broader coverage (games, NFTs, social), use the Chrome extension
+            to scrape additional directories.
+        </p>
+    </section>
+
+    <!-- 4. Chrome Extension -->
+    <section id="extension" class="guide-section">
+        <h3>4. Chrome Extension (Optional)</h3>
+        <p>
+            The Chrome extension unlocks additional data sources that require
+            browser-based scraping: DappRadar, CoinGecko, and other ecosystem
+            directories. It's <strong>optional</strong> — the core workflow works without it.
+        </p>
+
+        <h4>4a. Security &amp; Privacy</h4>
+        <div class="guide-security">
+            <div class="security-row safe">
+                <span class="security-icon">&#10003;</span>
+                <div>
+                    <strong>Public page content only</strong>
+                    <p>The extension reads project names, links, and categories from public web pages. Nothing private.</p>
+                </div>
+            </div>
+            <div class="security-row safe">
+                <span class="security-icon">&#10003;</span>
+                <div>
+                    <strong>No cookies, passwords, or history</strong>
+                    <p>The extension has zero access to your login credentials, browsing history, or stored data.</p>
+                </div>
+            </div>
+            <div class="security-row safe">
+                <span class="security-icon">&#10003;</span>
+                <div>
+                    <strong>Data stays local</strong>
+                    <p>Scraped data is stored in the browser and auto-deleted when the tab closes. Nothing is uploaded anywhere.</p>
+                </div>
+            </div>
+            <div class="security-row safe">
+                <span class="security-icon">&#10003;</span>
+                <div>
+                    <strong>No external servers</strong>
+                    <p>Network calls go only to public APIs (api.llama.fi, nearcatalog.xyz) — read-only, no auth tokens.</p>
+                </div>
+            </div>
+            <div class="security-row safe">
+                <span class="security-icon">&#10003;</span>
+                <div>
+                    <strong>Open source</strong>
+                    <p>All code is in the ZIP. The background script is 26 lines — relay only, no data processing or storage.</p>
+                </div>
+            </div>
+        </div>
+
+        <h4>4b. Installation Steps</h4>
+        <ol class="guide-steps">
+            <li>
+                <strong>Download the extension:</strong>
+                <a href="/api/download/extension" class="btn btn-secondary" download>
+                    Download ecosystem-scraper.zip
+                </a>
+            </li>
+            <li>
+                <strong>Extract the ZIP</strong> to a folder on your computer.
+                Default location is your Downloads folder, but you can choose any path.
+            </li>
+            <li>
+                <strong>Open Chrome extensions:</strong>
+                Type <code>chrome://extensions/</code> in the address bar and press Enter.
+            </li>
+            <li>
+                <strong>Enable Developer mode:</strong>
+                Toggle the switch in the top-right corner of the extensions page.
+            </li>
+            <li>
+                <strong>Load the extension:</strong>
+                Click "Load unpacked" and select the folder you extracted.
+            </li>
+            <li>
+                <strong>Use it:</strong>
+                Navigate to an ecosystem directory (e.g., DappRadar) and click the
+                extension icon in the toolbar. It will detect the site and offer to scrape project data.
+            </li>
+        </ol>
+
+        <h4>Extra sources unlocked by the extension:</h4>
+        <table class="guide-table">
+            <tr><th>Source</th><th>What it provides</th><th>Best for</th></tr>
+            <tr>
+                <td>DappRadar</td>
+                <td>Dapp rankings with categories and user activity</td>
+                <td>Games, DeFi, broader dapp coverage</td>
+            </tr>
+            <tr>
+                <td>CoinGecko</td>
+                <td>Token-based projects with market data</td>
+                <td>Token-based ecosystems</td>
+            </tr>
+            <tr>
+                <td>AptoFolio</td>
+                <td>Aptos-specific community directory</td>
+                <td>Aptos ecosystem only</td>
+            </tr>
+            <tr>
+                <td>AwesomeNEAR</td>
+                <td>NEAR community directory</td>
+                <td>NEAR ecosystem only</td>
+            </tr>
+        </table>
+    </section>
+
+    <!-- 5. Upload Additional Data -->
+    <section id="upload" class="guide-section">
+        <h3>5. Upload Additional Data</h3>
+        <p>
+            Go to <a href="/pipeline">Pipeline</a> → <strong>Panel 2: Upload CSV</strong>.
+        </p>
+        <p>
+            Upload a CSV file with project data from any source.
+            The CSV must have these required columns:
+        </p>
+        <table class="guide-table">
+            <tr><th>Column</th><th>Required</th><th>Description</th></tr>
+            <tr><td><code>Project Name</code></td><td>Yes</td><td>Name of the project</td></tr>
+            <tr><td><code>Chain</code></td><td>Yes</td><td>Chain identifier (uppercase, e.g., NEAR)</td></tr>
+            <tr><td><code>Category</code></td><td>Yes</td><td>Project category (DeFi, Bridge, etc.)</td></tr>
+            <tr><td><code>Website</code></td><td>Yes</td><td>Project website URL</td></tr>
+            <tr><td><code>Source</code></td><td>Yes</td><td>Where the data came from</td></tr>
+        </table>
+        <p>
+            Additional columns (X Handle, Notes, etc.) are preserved if present.
+            See the <a href="#columns">Column Reference</a> for all 27 columns.
+        </p>
+    </section>
+
+    <!-- 6. Run Enrichment -->
+    <section id="enrichment" class="guide-section">
+        <h3>6. Run Enrichment</h3>
+        <p>
+            Go to <a href="/pipeline">Pipeline</a> → <strong>Panel 3: Configure &amp; Run</strong>.
+        </p>
+        <p>
+            Check the steps you want to run and click <strong>Run Enrichment</strong>.
+            The pipeline processes your data through up to 9 steps:
+        </p>
+        <table class="guide-table">
+            <tr><th>Step</th><th>What it does</th></tr>
+            <tr><td><code>dedup</code></td><td>Remove duplicate projects by name and website</td></tr>
+            <tr><td><code>grid</code></td><td>Match projects against The Grid's product database</td></tr>
+            <tr><td><code>expand</code></td><td>Pull additional data from Grid for matched projects</td></tr>
+            <tr><td><code>coingecko</code></td><td>Enrich with CoinGecko token data (IDs, market info)</td></tr>
+            <tr><td><code>assets</code></td><td>Detect target assets (USDT, USDC, etc.) via CoinGecko API</td></tr>
+            <tr><td><code>twitter</code></td><td>Validate and normalize Twitter/X handles</td></tr>
+            <tr><td><code>website</code></td><td>Scan project websites for keywords and technologies</td></tr>
+            <tr><td><code>hints</code></td><td>Promote strong matches to confirmed based on evidence</td></tr>
+            <tr><td><code>validate</code></td><td>Final data quality checks and cleanup</td></tr>
+        </table>
+        <p>
+            Each step updates the CSV in place. Progress is shown in real-time in Panel 4.
+            You can uncheck steps to skip them — useful when re-running after making manual edits.
+        </p>
+    </section>
+
+    <!-- 7. Review & Download -->
+    <section id="review" class="guide-section">
+        <h3>7. Review &amp; Download</h3>
+        <p>
+            After enrichment, explore results using the <a href="/">Dashboard</a>
+            (summary charts) and <a href="/table">Projects</a> table (filterable list).
+        </p>
+        <p>
+            Download the enriched CSV from Pipeline → <strong>Download CSV</strong> button,
+            or from the table page.
+        </p>
+    </section>
+
+    <!-- 8. Column Reference -->
+    <section id="columns" class="guide-section">
+        <h3>8. Column Reference</h3>
+        <p>The standard CSV format has 27 columns:</p>
+        <table class="guide-table column-ref">
+            <tr><th>#</th><th>Column</th><th>Description</th></tr>
+            <tr><td>1</td><td>Project Name</td><td>Official project name</td></tr>
+            <tr><td>2</td><td>Chain</td><td>Blockchain (uppercase, e.g., NEAR)</td></tr>
+            <tr><td>3</td><td>Category</td><td>DeFi, Bridge, Gaming, NFT, etc.</td></tr>
+            <tr><td>4</td><td>Website</td><td>Project website URL</td></tr>
+            <tr><td>5</td><td>X Handle</td><td>Twitter/X handle (@username)</td></tr>
+            <tr><td>6</td><td>Source</td><td>Data source (DefiLlama, DappRadar, etc.)</td></tr>
+            <tr><td>7</td><td>Grid Status</td><td>Matched, Not Found, or Skipped</td></tr>
+            <tr><td>8</td><td>Grid Product Name</td><td>Matched product name on The Grid</td></tr>
+            <tr><td>9</td><td>Grid Product Slug</td><td>URL slug on The Grid</td></tr>
+            <tr><td>10</td><td>Grid Product Type</td><td>Product type from The Grid</td></tr>
+            <tr><td>11</td><td>Grid Profile Sector</td><td>Sector classification from The Grid</td></tr>
+            <tr><td>12</td><td>Grid Profile Tags</td><td>Tags from The Grid profile</td></tr>
+            <tr><td>13</td><td>Grid Profile Type</td><td>Profile type (project, asset, etc.)</td></tr>
+            <tr><td>14</td><td>Grid Product Status</td><td>Active, Beta, etc.</td></tr>
+            <tr><td>15</td><td>Grid Rank</td><td>Grid ranking score</td></tr>
+            <tr><td>16</td><td>CoinGecko ID</td><td>CoinGecko API identifier</td></tr>
+            <tr><td>17</td><td>Has USDT</td><td>Whether project has USDT pools/pairs</td></tr>
+            <tr><td>18</td><td>Has USDC</td><td>Whether project has USDC pools/pairs</td></tr>
+            <tr><td>19</td><td>Has Stablecoin</td><td>Whether project has any stablecoin</td></tr>
+            <tr><td>20</td><td>Has Web3 Wallet</td><td>Web3 wallet integration detected</td></tr>
+            <tr><td>21</td><td>Website Scan Status</td><td>Scanned, Failed, Pending</td></tr>
+            <tr><td>22</td><td>Website Keywords Found</td><td>Keywords detected on the website</td></tr>
+            <tr><td>23</td><td>Skip</td><td>TRUE to exclude from analysis</td></tr>
+            <tr><td>24</td><td>Skip Reason</td><td>Why the project was skipped</td></tr>
+            <tr><td>25</td><td>Notes</td><td>Free-form notes (TVL, etc.)</td></tr>
+            <tr><td>26</td><td>Evidence & Source URLs</td><td>Links supporting the data</td></tr>
+            <tr><td>27</td><td>Reviewed</td><td>Manual review flag</td></tr>
+        </table>
+    </section>
+
+    <!-- 9. Troubleshooting -->
+    <section id="troubleshooting" class="guide-section">
+        <h3>9. Troubleshooting</h3>
+        <table class="guide-table">
+            <tr><th>Problem</th><th>Solution</th></tr>
+            <tr>
+                <td>No projects found from DefiLlama</td>
+                <td>Check the DefiLlama slug is correct and case-sensitive.
+                    Visit <a href="https://defillama.com/chains" target="_blank">defillama.com/chains</a> to verify.</td>
+            </tr>
+            <tr>
+                <td>Discovery says "rate limited"</td>
+                <td>The DefiLlama API has rate limits. Wait a minute and try again.
+                    The scraper retries automatically up to 3 times.</td>
+            </tr>
+            <tr>
+                <td>Pipeline fails on a step</td>
+                <td>The failed step is highlighted in red with an error message.
+                    Fix the issue and re-run — you can uncheck completed steps to skip them.</td>
+            </tr>
+            <tr>
+                <td>Upload says "missing required columns"</td>
+                <td>Your CSV must have at minimum: Project Name, Chain, Category, Website, Source.
+                    Check spelling and case — they're case-sensitive.</td>
+            </tr>
+            <tr>
+                <td>Extension not detecting the site</td>
+                <td>Refresh the page, then click the extension icon. Some sites load dynamically
+                    and need a moment. Check that you're on a supported site (DappRadar, CoinGecko, etc.).</td>
+            </tr>
+            <tr>
+                <td>Extension not appearing after install</td>
+                <td>Make sure Developer mode is ON in <code>chrome://extensions/</code>.
+                    Click the puzzle icon in Chrome's toolbar to pin the extension.</td>
+            </tr>
+            <tr>
+                <td>Chain not appearing in dropdowns</td>
+                <td>After adding a chain, the page reloads automatically.
+                    If not, refresh the page manually.</td>
+            </tr>
+        </table>
+    </section>
+</div>
+{% endblock %}

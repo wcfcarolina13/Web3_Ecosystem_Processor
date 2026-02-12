@@ -61,6 +61,14 @@ def index():
     )
 
 
+@bp.route("/guide")
+def guide():
+    """User guide page."""
+    chain = _get_chain()
+    chains = get_available_chains()
+    return render_template("guide.html", chain=chain, chains=chains)
+
+
 @bp.route("/table")
 def table():
     """Full project table with search/filter."""

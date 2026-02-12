@@ -3,7 +3,13 @@
     {
       "id": "aptos",
       "name": "Aptos",
-      "target_assets": ["USDT", "USDC", "SOL", "STRK", "ADA"],
+      "target_assets": [
+        "USDT",
+        "USDC",
+        "SOL",
+        "STRK",
+        "ADA"
+      ],
       "sources": {
         "defillama": {
           "chain_slug": "Aptos",
@@ -25,7 +31,13 @@
     {
       "id": "avalanche",
       "name": "Avalanche",
-      "target_assets": ["USDT", "USDC", "SOL", "STRK", "ADA"],
+      "target_assets": [
+        "USDT",
+        "USDC",
+        "SOL",
+        "STRK",
+        "ADA"
+      ],
       "sources": {
         "defillama": {
           "chain_slug": "Avalanche",
@@ -44,7 +56,13 @@
     {
       "id": "near",
       "name": "NEAR",
-      "target_assets": ["USDT", "USDC", "SOL", "STRK", "ADA"],
+      "target_assets": [
+        "USDT",
+        "USDC",
+        "SOL",
+        "STRK",
+        "ADA"
+      ],
       "sources": {
         "defillama": {
           "chain_slug": "Near",
