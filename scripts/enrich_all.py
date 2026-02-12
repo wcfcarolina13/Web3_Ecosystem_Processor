@@ -15,11 +15,19 @@ Orchestrates:
 Each step reads the same CSV, enriches in place, and writes back.
 Use --skip to skip specific steps. Use --dry-run to preview all steps.
 
+Safety features:
+  - Pre-pipeline backup (never deleted — ultimate safety net)
+  - Per-step checkpoints (deleted on success, available for rollback)
+  - --stop-on-error: halt pipeline on first step failure
+  - --rollback-on-error: restore CSV from checkpoint when a step fails
+  - Structured logging to data/<chain>/pipeline.log
+
 Usage:
     python scripts/enrich_all.py --chain near
     python scripts/enrich_all.py --chain near --dry-run
     python scripts/enrich_all.py --chain near --skip dedup,notes
     python scripts/enrich_all.py --chain near --only grid,coingecko
+    python scripts/enrich_all.py --chain near --stop-on-error --rollback-on-error
 """
 
 import argparse
@@ -30,7 +38,9 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
-from lib.csv_utils import find_main_csv, load_csv
+import shutil
+
+from lib.csv_utils import find_main_csv, load_csv, backup_csv
 from lib.logging_config import get_logger, configure_logging
 
 logger = get_logger(__name__)
@@ -189,6 +199,10 @@ def main():
                         help="Comma-separated steps to run (overrides --skip)")
     parser.add_argument("--assets",
                         help="Override target assets (comma-separated, e.g., USDT,USDC)")
+    parser.add_argument("--stop-on-error", action="store_true",
+                        help="Stop pipeline on first step failure")
+    parser.add_argument("--rollback-on-error", action="store_true",
+                        help="Restore CSV from checkpoint when a step fails")
     args = parser.parse_args()
 
     # Configure logging (file logging only when not dry-run)
@@ -240,16 +254,33 @@ def main():
     logger.info("Steps: %s", " → ".join(steps_to_run))
     if args.dry_run:
         logger.info("Mode: DRY RUN (no files written)")
+    if args.stop_on_error:
+        logger.info("Mode: --stop-on-error (halt on first failure)")
+    if args.rollback_on_error:
+        logger.info("Mode: --rollback-on-error (restore checkpoint on failure)")
+
+    # Pre-pipeline backup (safety net — never deleted)
+    if not args.dry_run:
+        pipeline_backup = backup_csv(csv_path, suffix="pre-pipeline")
+        logger.info("Backup: %s", pipeline_backup.name)
+    else:
+        pipeline_backup = None
 
     # Run each step
     results = {}
     total_start = time.time()
+    pipeline_halted = False
 
     for step in steps_to_run:
         desc = STEP_DESCRIPTIONS[step]
         logger.info("─" * 60)
         logger.info("STEP: %s — %s", step, desc)
         logger.info("─" * 60)
+
+        # Per-step checkpoint (deleted on success, used for rollback on failure)
+        checkpoint = None
+        if not args.dry_run:
+            checkpoint = backup_csv(csv_path, suffix=f"pre-{step}")
 
         step_start = time.time()
         runner = STEP_RUNNERS[step]
@@ -265,10 +296,26 @@ def main():
             result["elapsed"] = f"{elapsed:.1f}s"
             results[step] = result
             logger.info("  ✓ %s completed in %.1fs", step, elapsed)
+
+            # Delete checkpoint on success (keeps disk tidy)
+            if checkpoint and checkpoint.exists():
+                checkpoint.unlink()
+
         except Exception as e:
             elapsed = time.time() - step_start
             results[step] = {"error": str(e), "elapsed": f"{elapsed:.1f}s"}
             logger.error("  ✗ %s FAILED in %.1fs: %s", step, elapsed, e, exc_info=True)
+
+            # Rollback: restore CSV from checkpoint
+            if args.rollback_on_error and checkpoint and checkpoint.exists():
+                shutil.copy2(checkpoint, csv_path)
+                logger.warning("  ↩ Rolled back CSV to pre-%s checkpoint", step)
+
+            # Stop: halt pipeline on first failure
+            if args.stop_on_error:
+                logger.warning("  ⛔ Pipeline halted (--stop-on-error)")
+                pipeline_halted = True
+                break
 
     # Summary
     total_elapsed = time.time() - total_start
@@ -284,6 +331,10 @@ def main():
             parts = [f"{k}={v}" for k, v in r.items() if k != "elapsed"]
             logger.info("  %s: %s (%s)", step, ", ".join(parts), r.get("elapsed", "?"))
 
+    if pipeline_halted:
+        logger.warning("Pipeline was halted early due to step failure.")
+    if pipeline_backup:
+        logger.info("Pre-pipeline backup: %s", pipeline_backup)
     if args.dry_run:
         logger.info("[DRY RUN] No files were written. Re-run without --dry-run.")
 
