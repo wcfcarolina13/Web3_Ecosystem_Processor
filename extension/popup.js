@@ -253,8 +253,12 @@ function toCSV(data) {
       notes,                                     // Notes
       ''                                         // Evidence URLs
     ].map(val => {
+      if (typeof val !== 'string') return val;
+      // Sanitize: strip newlines, decode HTML entities, collapse whitespace
+      val = val.replace(/[\r\n]+/g, ' ').replace(/\s+/g, ' ').trim();
+      val = val.replace(/&amp;/g, '&').replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&#39;/g, "'").replace(/&quot;/g, '"');
       // Escape CSV values
-      if (typeof val === 'string' && (val.includes(',') || val.includes('"') || val.includes('\n'))) {
+      if (val.includes(',') || val.includes('"') || val.includes('\n')) {
         return `"${val.replace(/"/g, '""')}"`;
       }
       return val;
