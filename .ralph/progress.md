@@ -90,3 +90,20 @@ This is how Ralph maintains continuity across iterations.
 
 **Pipeline now 8 steps:** dedup → grid → defillama → coingecko → website → promote → notes → sources
 
+### Session 6 — 2026-02-12 (Manual)
+
+**Accomplished:**
+- **Grid Match Gap Closer** (`expand_grid_matches.py`): Multi-strategy batch expansion that downloads all 2,986 Grid profiles + 6,206 products, builds normalized-name and domain indexes, matches locally. 5 false-positive guard layers (EXCLUDED_DOMAINS, MIN_NORMALIZED_LEN, URL cross-validation, word overlap, suffix-strip awareness). 9 new matches found (5 batch-name, 4 batch-url). Integrated as pipeline step 2 (expand-grid).
+- **Pipeline Hardening** (5 improvements):
+  1. **Atomic CSV writes**: `write_csv()` now uses tempfile + `os.fsync()` + `os.replace()` — never truncates on crash
+  2. **Auto-backup**: `backup_csv()` creates timestamped or named .bak files; pre-pipeline backup as safety net
+  3. **Column validation**: `load_csv()` validates 5 REQUIRED_COLUMNS by default, raises `CSVColumnError` early
+  4. **Structured logging**: `lib/logging_config.py` with `get_logger()`/`configure_logging()`, pipeline writes `data/<chain>/pipeline.log`
+  5. **Pipeline checkpoints**: Per-step checkpoints (deleted on success), `--stop-on-error`, `--rollback-on-error` flags
+
+**NEAR CSV stats (791 rows):**
+- Grid matched: 159 rows (20.1%, was 150)
+- Suspect USDT = TRUE: 151 rows (was 147)
+- General Stablecoin Adoption = TRUE: 107 rows
+- Pipeline: 9 steps (dedup → expand-grid → grid → defillama → coingecko → website → promote → notes → sources)
+
