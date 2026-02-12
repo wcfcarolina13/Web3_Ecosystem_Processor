@@ -3,12 +3,31 @@
 // Dynamic site detection — no hardcoded list needed.
 // The scraper engine matches sites via config/sites/*.js configs.
 async function detectSite(tab) {
-  try {
-    const response = await chrome.tabs.sendMessage(tab.id, { action: 'getSiteConfig' });
-    return response && response.matched ? { id: response.siteId, name: response.siteName } : null;
-  } catch (e) {
-    return null;
+  // Try sending message to existing content script first
+  for (let attempt = 0; attempt < 2; attempt++) {
+    try {
+      const response = await chrome.tabs.sendMessage(tab.id, { action: 'getSiteConfig' });
+      return response && response.matched ? { id: response.siteId, name: response.siteName } : null;
+    } catch (e) {
+      if (attempt === 0) {
+        // Content script not present — inject it and retry
+        try {
+          await chrome.scripting.executeScript({
+            target: { tabId: tab.id },
+            files: ['scraper-engine.js']
+          });
+          // Wait for configs to load
+          await new Promise(r => setTimeout(r, 1500));
+        } catch (injectErr) {
+          // Can't inject (e.g., chrome:// pages) — give up
+          return null;
+        }
+      } else {
+        return null;
+      }
+    }
   }
+  return null;
 }
 
 let scrapedData = [];
