@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Ecosystem Research{% endblock %}</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4"></script>
+</head>
+<body>
+    <header>
+        <div class="header-content">
+            <h1>Ecosystem Research</h1>
+            <nav>
+                <a href="/?chain={{ chain }}" class="{% if request.path == '/' %}active{% endif %}">Dashboard</a>
+                <a href="/table?chain={{ chain }}" class="{% if request.path == '/table' %}active{% endif %}">Projects</a>
+                <form id="chain-form" method="get" action="{{ request.path }}">
+                    <select name="chain" onchange="this.form.submit()">
+                        {% for c in chains %}
+                        <option value="{{ c.id }}" {% if c.id == chain %}selected{% endif %}>
+                            {{ c.name }}
+                        </option>
+                        {% endfor %}
+                    </select>
+                </form>
+            </nav>
+        </div>
+    </header>
+
+    <main>
+        {% block content %}{% endblock %}
+    </main>
+
+    <footer>
+        <small>
+            Chain: <strong>{{ chain | upper }}</strong>
+            {% block footer_extra %}{% endblock %}
+        </small>
+    </footer>
+
+    {% block scripts %}{% endblock %}
+</body>
+</html>

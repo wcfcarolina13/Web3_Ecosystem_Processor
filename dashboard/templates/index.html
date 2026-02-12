@@ -1,0 +1,277 @@
+{% extends "base.html" %}
+{% block title %}Dashboard — {{ chain | upper }} Ecosystem{% endblock %}
+
+{% block footer_extra %}
+    | {{ summary.total_projects }} projects
+    | CSV: <code>{{ csv_path | truncate(60) }}</code>
+{% endblock %}
+
+{% block content %}
+
+<!-- Section 1: Summary Stats -->
+<section class="stats-grid">
+    <div class="stat-card primary">
+        <span class="stat-value">{{ summary.total_projects }}</span>
+        <span class="stat-label">Total Projects</span>
+    </div>
+    <div class="stat-card {% if summary.grid_matched > 0 %}success{% endif %}">
+        <span class="stat-value">{{ summary.grid_matched }}</span>
+        <span class="stat-pct">{{ summary.grid_match_pct }}%</span>
+        <span class="stat-label">Grid Matched</span>
+    </div>
+    <div class="stat-card">
+        <span class="stat-value">{{ summary.with_website }}</span>
+        <span class="stat-pct">{{ summary.with_website_pct }}%</span>
+        <span class="stat-label">With Website</span>
+    </div>
+    <div class="stat-card">
+        <span class="stat-value">{{ summary.with_evidence }}</span>
+        <span class="stat-pct">{{ summary.with_evidence_pct }}%</span>
+        <span class="stat-label">With Evidence</span>
+    </div>
+</section>
+
+<!-- Section 2: Research Flags -->
+<section class="stats-grid flags">
+    <div class="stat-card flag-usdt">
+        <span class="stat-value">{{ flags.suspect_usdt }}</span>
+        <span class="stat-label">Suspect USDT Support</span>
+    </div>
+    <div class="stat-card flag-web3">
+        <span class="stat-value">{{ flags.web3_no_stable }}</span>
+        <span class="stat-label">Web3 (no stablecoin)</span>
+    </div>
+    <div class="stat-card flag-stablecoin">
+        <span class="stat-value">{{ flags.general_stablecoin }}</span>
+        <span class="stat-label">General Stablecoin</span>
+    </div>
+</section>
+
+<!-- Section 3 & 4: Charts row -->
+<section class="charts-row">
+    <div class="chart-box wide">
+        <h3>Enrichment Coverage</h3>
+        <canvas id="enrichment-chart"></canvas>
+    </div>
+    <div class="chart-box">
+        <h3>Source Attribution</h3>
+        <canvas id="source-chart"></canvas>
+    </div>
+</section>
+
+<!-- Section 5 & 6: Charts row -->
+<section class="charts-row">
+    <div class="chart-box wide">
+        <h3>Top Categories</h3>
+        <canvas id="category-chart"></canvas>
+    </div>
+    <div class="chart-box">
+        <h3>Grid Matching</h3>
+        <canvas id="grid-chart"></canvas>
+    </div>
+</section>
+
+<!-- Section 7: Website Scan Details -->
+{% if website_scan.total_hits > 0 %}
+<section class="charts-row">
+    <div class="chart-box wide">
+        <h3>Website Keyword Scan Results</h3>
+        <canvas id="webscan-chart"></canvas>
+    </div>
+    <div class="chart-box">
+        <h3>Grid Status Breakdown</h3>
+        <canvas id="grid-status-chart"></canvas>
+    </div>
+</section>
+{% endif %}
+
+<!-- Section 8: Coverage Details -->
+<section class="details-grid">
+    <div class="detail-card">
+        <h3>Social Coverage</h3>
+        <table class="detail-table">
+            <tr><td>Website</td><td class="num">{{ summary.with_website }}</td><td class="pct">{{ summary.with_website_pct }}%</td></tr>
+            <tr><td>X / Twitter</td><td class="num">{{ summary.with_x_link }}</td></tr>
+            <tr><td>Telegram</td><td class="num">{{ summary.with_telegram }}</td></tr>
+            <tr><td>Category</td><td class="num">{{ summary.with_category }}</td></tr>
+        </table>
+    </div>
+    <div class="detail-card">
+        <h3>Processing Status</h3>
+        <table class="detail-table">
+            <tr><td>Skip</td><td class="num">{{ summary.skip_count }}</td></tr>
+            <tr><td>Added to Admin</td><td class="num">{{ summary.added_count }}</td></tr>
+            <tr><td>Processed</td><td class="num">{{ summary.processed_count }}</td></tr>
+            <tr><td>In Admin</td><td class="num">{{ summary.in_admin_count }}</td></tr>
+        </table>
+    </div>
+    <div class="detail-card">
+        <h3>Enrichment Sources</h3>
+        <table class="detail-table">
+            <tr><td>Grid API</td><td class="num">{{ enrichment.grid }}</td><td class="pct">{{ enrichment.grid_pct }}%</td></tr>
+            <tr><td>DefiLlama</td><td class="num">{{ enrichment.defillama }}</td><td class="pct">{{ enrichment.defillama_pct }}%</td></tr>
+            <tr><td>CoinGecko</td><td class="num">{{ enrichment.coingecko }}</td><td class="pct">{{ enrichment.coingecko_pct }}%</td></tr>
+            <tr><td>Website Scan</td><td class="num">{{ enrichment.website_scan }}</td><td class="pct">{{ enrichment.website_scan_pct }}%</td></tr>
+            <tr><td>No Evidence</td><td class="num">{{ enrichment.no_evidence }}</td><td class="pct">{{ enrichment.no_evidence_pct }}%</td></tr>
+        </table>
+    </div>
+</section>
+
+{% endblock %}
+
+{% block scripts %}
+<script>
+// ── Color palette ──
+const colors = {
+    grid: '#4e79a7',
+    defillama: '#f28e2b',
+    coingecko: '#e15759',
+    webscan: '#76b7b2',
+    noevidence: '#bab0ac',
+    matched: '#59a14f',
+    unmatched: '#edc948',
+};
+const sourceColors = [
+    '#4e79a7', '#f28e2b', '#e15759', '#76b7b2', '#59a14f',
+    '#edc948', '#b07aa1', '#ff9da7', '#9c755f', '#bab0ac',
+    '#86bcb6', '#8cd17d', '#b6992d', '#499894', '#e15759',
+    '#f1ce63', '#d37295', '#a0cbe8', '#fabfd2', '#d4a6c8',
+];
+
+// ── Enrichment Coverage Bar Chart ──
+const enrichData = {{ enrichment | tojson }};
+new Chart(document.getElementById('enrichment-chart'), {
+    type: 'bar',
+    data: {
+        labels: ['Grid API', 'DefiLlama', 'CoinGecko', 'Website Scan', 'No Evidence'],
+        datasets: [{
+            data: [enrichData.grid, enrichData.defillama, enrichData.coingecko,
+                   enrichData.website_scan, enrichData.no_evidence],
+            backgroundColor: [colors.grid, colors.defillama, colors.coingecko,
+                              colors.webscan, colors.noevidence],
+        }]
+    },
+    options: {
+        indexAxis: 'y',
+        plugins: { legend: { display: false } },
+        scales: {
+            x: { beginAtZero: true, title: { display: true, text: 'Projects' } }
+        }
+    }
+});
+
+// ── Source Attribution Doughnut ──
+const sourceData = {{ sources | tojson }};
+new Chart(document.getElementById('source-chart'), {
+    type: 'doughnut',
+    data: {
+        labels: sourceData.map(s => s.source),
+        datasets: [{
+            data: sourceData.map(s => s.count),
+            backgroundColor: sourceColors.slice(0, sourceData.length),
+        }]
+    },
+    options: {
+        plugins: {
+            legend: {
+                position: 'right',
+                labels: { boxWidth: 12, font: { size: 11 } }
+            }
+        }
+    }
+});
+
+// ── Category Breakdown ──
+const catData = {{ categories | tojson }};
+new Chart(document.getElementById('category-chart'), {
+    type: 'bar',
+    data: {
+        labels: catData.map(c => c.category),
+        datasets: [{
+            data: catData.map(c => c.count),
+            backgroundColor: '#4e79a7',
+        }]
+    },
+    options: {
+        indexAxis: 'y',
+        plugins: { legend: { display: false } },
+        scales: {
+            x: { beginAtZero: true, title: { display: true, text: 'Projects' } }
+        }
+    }
+});
+
+// ── Grid Matching Doughnut ──
+const gridData = {{ grid_status | tojson }};
+new Chart(document.getElementById('grid-chart'), {
+    type: 'doughnut',
+    data: {
+        labels: ['Matched (' + gridData.matched + ')', 'Unmatched (' + gridData.unmatched + ')'],
+        datasets: [{
+            data: [gridData.matched, gridData.unmatched],
+            backgroundColor: [colors.matched, colors.unmatched],
+        }]
+    },
+    options: {
+        plugins: {
+            legend: {
+                position: 'bottom',
+                labels: { font: { size: 12 } }
+            }
+        }
+    }
+});
+
+// ── Website Scan Results (if any) ──
+{% if website_scan.total_hits > 0 %}
+const wsData = {{ website_scan | tojson }};
+const wsLabels = wsData.asset_hits.map(a => a.asset);
+const wsValues = wsData.asset_hits.map(a => a.count);
+wsLabels.push('Stablecoin Mentions', 'Web3 Signals');
+wsValues.push(wsData.stablecoin_mentions, wsData.web3_signals);
+
+new Chart(document.getElementById('webscan-chart'), {
+    type: 'bar',
+    data: {
+        labels: wsLabels,
+        datasets: [{
+            label: 'Keyword Hits ({{ website_scan.total_hits }} projects)',
+            data: wsValues,
+            backgroundColor: '#76b7b2',
+        }]
+    },
+    options: {
+        indexAxis: 'y',
+        plugins: { legend: { display: true, position: 'top' } },
+        scales: {
+            x: { beginAtZero: true, title: { display: true, text: 'Projects with hits' } }
+        }
+    }
+});
+{% endif %}
+
+// ── Grid Status Breakdown ──
+{% if grid_status.statuses %}
+const gsData = {{ grid_status.statuses | tojson }};
+if (gsData.length > 0) {
+    new Chart(document.getElementById('grid-status-chart'), {
+        type: 'bar',
+        data: {
+            labels: gsData.map(s => s.status),
+            datasets: [{
+                data: gsData.map(s => s.count),
+                backgroundColor: '#4e79a7',
+            }]
+        },
+        options: {
+            indexAxis: 'y',
+            plugins: { legend: { display: false } },
+            scales: {
+                x: { beginAtZero: true }
+            }
+        }
+    });
+}
+{% endif %}
+</script>
+{% endblock %}

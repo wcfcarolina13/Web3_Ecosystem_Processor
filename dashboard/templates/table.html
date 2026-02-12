@@ -1,0 +1,165 @@
+{% extends "base.html" %}
+{% block title %}Projects — {{ chain | upper }} Ecosystem{% endblock %}
+
+{% block footer_extra %}
+    | Showing {{ shown }} of {{ total }} projects
+{% endblock %}
+
+{% block content %}
+
+<!-- Filters -->
+<section class="table-filters">
+    <form method="get" action="/table" class="filter-form">
+        <input type="hidden" name="chain" value="{{ chain }}">
+
+        <div class="filter-group">
+            <label for="search">Search</label>
+            <input type="text" id="search" name="search" value="{{ filters.search }}"
+                   placeholder="Project name..." autocomplete="off">
+        </div>
+
+        <div class="filter-group">
+            <label for="category">Category</label>
+            <select name="category" id="category">
+                <option value="">All</option>
+                {% for cat in filter_options.categories %}
+                <option value="{{ cat }}" {% if filters.category == cat %}selected{% endif %}>{{ cat }}</option>
+                {% endfor %}
+            </select>
+        </div>
+
+        <div class="filter-group">
+            <label for="source">Source</label>
+            <select name="source" id="source">
+                <option value="">All</option>
+                {% for src in filter_options.sources %}
+                <option value="{{ src }}" {% if filters.source == src %}selected{% endif %}>{{ src }}</option>
+                {% endfor %}
+            </select>
+        </div>
+
+        <div class="filter-group">
+            <label for="grid_matched">Grid</label>
+            <select name="grid_matched" id="grid_matched">
+                <option value="">All</option>
+                <option value="yes" {% if filters.grid_matched == 'yes' %}selected{% endif %}>Matched</option>
+                <option value="no" {% if filters.grid_matched == 'no' %}selected{% endif %}>Unmatched</option>
+            </select>
+        </div>
+
+        <div class="filter-group">
+            <label for="has_evidence">Evidence</label>
+            <select name="has_evidence" id="has_evidence">
+                <option value="">All</option>
+                <option value="yes" {% if filters.has_evidence == 'yes' %}selected{% endif %}>Has Evidence</option>
+                <option value="no" {% if filters.has_evidence == 'no' %}selected{% endif %}>No Evidence</option>
+            </select>
+        </div>
+
+        <div class="filter-group">
+            <button type="submit" class="btn">Filter</button>
+            <a href="/table?chain={{ chain }}" class="btn btn-secondary">Reset</a>
+        </div>
+    </form>
+
+    <div class="table-count">
+        Showing <strong>{{ shown }}</strong> of {{ total }} projects
+    </div>
+</section>
+
+<!-- Project Table -->
+<section class="table-container">
+    <table class="project-table" id="project-table">
+        <thead>
+            <tr>
+                <th class="sortable" data-col="0">Project Name</th>
+                <th class="sortable" data-col="1">Category</th>
+                <th class="sortable" data-col="2">Source</th>
+                <th>Website</th>
+                <th class="sortable" data-col="4">Grid Status</th>
+                <th>Profile</th>
+                <th>USDT?</th>
+                <th>Stable?</th>
+                <th>Evidence</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for p in projects %}
+            <tr class="{% if p.skip %}row-skip{% elif p.profile_name %}row-matched{% endif %}">
+                <td class="name-cell">
+                    <strong>{{ p.name }}</strong>
+                    {% if p.x_handle %}<span class="x-handle">{{ p.x_handle }}</span>{% endif %}
+                </td>
+                <td>{{ p.category }}</td>
+                <td class="source-cell">{{ p.source }}</td>
+                <td class="link-cell">
+                    {% if p.website %}
+                    <a href="{{ p.website }}" target="_blank" rel="noopener" title="{{ p.website }}">
+                        {{ p.website | truncate(30) }}
+                    </a>
+                    {% endif %}
+                </td>
+                <td>{{ p.grid_status }}</td>
+                <td>{{ p.profile_name }}</td>
+                <td class="bool-cell">{% if p.suspect_usdt %}<span class="badge usdt">USDT</span>{% endif %}</td>
+                <td class="bool-cell">{% if p.general_stablecoin %}<span class="badge stable">Stable</span>{% endif %}{% if p.web3_no_stable %}<span class="badge web3">Web3</span>{% endif %}</td>
+                <td class="evidence-cell" title="{{ p.evidence }}">{{ p.evidence }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</section>
+
+{% endblock %}
+
+{% block scripts %}
+<script>
+// ── Client-side column sorting ──
+const table = document.getElementById('project-table');
+const headers = table.querySelectorAll('th.sortable');
+let sortCol = -1;
+let sortAsc = true;
+
+headers.forEach(th => {
+    th.addEventListener('click', () => {
+        const col = parseInt(th.dataset.col);
+        if (sortCol === col) {
+            sortAsc = !sortAsc;
+        } else {
+            sortCol = col;
+            sortAsc = true;
+        }
+        // Update header indicators
+        headers.forEach(h => h.classList.remove('sort-asc', 'sort-desc'));
+        th.classList.add(sortAsc ? 'sort-asc' : 'sort-desc');
+
+        // Sort rows
+        const tbody = table.querySelector('tbody');
+        const rows = Array.from(tbody.querySelectorAll('tr'));
+        rows.sort((a, b) => {
+            const aText = a.cells[col].textContent.trim().toLowerCase();
+            const bText = b.cells[col].textContent.trim().toLowerCase();
+            return sortAsc
+                ? aText.localeCompare(bText)
+                : bText.localeCompare(aText);
+        });
+        rows.forEach(row => tbody.appendChild(row));
+    });
+});
+
+// ── Live search (filters table rows as you type) ──
+const searchInput = document.getElementById('search');
+searchInput.addEventListener('input', () => {
+    const term = searchInput.value.toLowerCase();
+    const rows = table.querySelectorAll('tbody tr');
+    let visible = 0;
+    rows.forEach(row => {
+        const name = row.cells[0].textContent.toLowerCase();
+        const show = !term || name.includes(term);
+        row.style.display = show ? '' : 'none';
+        if (show) visible++;
+    });
+    document.querySelector('.table-count strong').textContent = visible;
+});
+</script>
+{% endblock %}
