@@ -74,3 +74,19 @@ This is how Ralph maintains continuity across iterations.
   - Richer card extraction: description, category, social links per card
   - Better project field extraction: nested profiles, linktree socials, Twitter URL→handle normalization
 
+### Session 5 — 2026-02-12 (Manual)
+
+**Accomplished:**
+- **Website keyword scan** (`enrich_website_keywords.py`): Scans homepage HTML for asset/stablecoin keywords. 712 sites scanned, 198 keyword hits (27.8%). Integrated as pipeline step 5. Writes `[UNVERIFIED website-scan]` to Notes and `website-scan: scanned` to Evidence.
+- **Web dashboard** (`dashboard/`): Flask + Chart.js local dashboard with 7 stat cards, 6 interactive charts, filterable project table. Zero new pip installs (Flask already available). Runs at localhost:5050 via `python scripts/dashboard.py --chain near`.
+- **Hint promotion engine** (`promote_hints.py`): Converts website-scan findings into boolean research columns. 3 strategies: USDT keywords → Suspect USDT (+19), USDC/stablecoin → General Stablecoin (+32), Web3 completeness. Integrated as pipeline step 6.
+
+**NEAR CSV stats (791 rows):**
+- Suspect USDT = TRUE: 147 rows (was 128)
+- General Stablecoin Adoption = TRUE: 107 rows (was 75)
+- Web3 but no stablecoin: 629 rows (was 670)
+- Grid matched: 150 rows (19%)
+- Evidence coverage: 750 rows (94.8%)
+
+**Pipeline now 8 steps:** dedup → grid → defillama → coingecko → website → promote → notes → sources
+
