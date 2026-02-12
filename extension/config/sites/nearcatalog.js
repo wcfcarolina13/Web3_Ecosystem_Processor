@@ -1,6 +1,6 @@
-// NEARCatalog site config — Next.js streaming data (__next_f.push)
-// NEARCatalog uses a non-standard Next.js streaming format where data
-// is delivered via self.__next_f.push() calls in script tags.
+// NEARCatalog site config — uses the indexer REST API for full catalog
+// Homepage only shows ~72 curated projects. The API returns all ~350.
+// API: https://indexer.nearcatalog.org/wp-json/nearcatalog/v1/projects
 window.EcoScraperSites = window.EcoScraperSites || [];
 window.EcoScraperSites.push({
   id: 'nearcatalog',
@@ -12,134 +12,110 @@ window.EcoScraperSites.push({
 
   defaultChain: 'NEAR',
 
-  // Custom scrape because __next_f streaming is non-standard
   customScrape: async function(engine) {
-    var projects = [];
+    engine.reportProgress(0, 100, 'Fetching full project catalog from API...');
 
-    engine.reportProgress(0, 100, 'Extracting NEARCatalog data...');
-
-    // Strategy 1: Try __NEXT_DATA__ first (simpler pages may have it)
-    var nextDataEl = document.querySelector('#__NEXT_DATA__');
-    if (nextDataEl) {
-      try {
-        var nextData = JSON.parse(nextDataEl.textContent);
-        var items = null;
-
-        // Try common paths
-        var paths = [
-          'props.pageProps.projects',
-          'props.pageProps.data',
-          'props.pageProps'
-        ];
-        for (var p = 0; p < paths.length; p++) {
-          var candidate = engine.getByPath(nextData, paths[p]);
-          if (candidate && (Array.isArray(candidate) || typeof candidate === 'object')) {
-            items = candidate;
-            break;
-          }
+    // Strategy 1: REST API (returns ALL projects)
+    try {
+      var resp = await fetch('https://indexer.nearcatalog.org/wp-json/nearcatalog/v1/projects');
+      if (resp.ok) {
+        var data = await resp.json();
+        var projects = processNearcatalogItems(data, engine);
+        if (projects.length > 0) {
+          engine.reportProgress(projects.length, projects.length,
+            'Done — ' + projects.length + ' projects from API');
+          return projects;
         }
-
-        if (items) {
-          return processItems(items, engine);
-        }
-      } catch (e) {
-        // Fall through to streaming extraction
       }
+    } catch (e) {
+      console.warn('[NEARCatalog] API fetch failed, falling back to page data:', e.message);
     }
 
-    // Strategy 2: Extract from __next_f streaming data
-    var scripts = document.querySelectorAll('script');
-    var jsonChunks = [];
+    // Strategy 2: Parse RSC streaming data from __next_f.push() on the page
+    engine.reportProgress(0, 100, 'API unavailable — parsing page data...');
+    try {
+      var scripts = document.querySelectorAll('script');
+      var jsonChunks = [];
 
-    for (var i = 0; i < scripts.length; i++) {
-      var text = scripts[i].textContent || '';
-      // Match self.__next_f.push([1,"..."]) patterns
-      var matches = text.match(/self\.__next_f\.push\(\s*\[\s*\d+\s*,\s*"(.+?)"\s*\]\s*\)/g);
-      if (matches) {
-        for (var j = 0; j < matches.length; j++) {
-          // Extract the JSON string content from the push call
-          var contentMatch = matches[j].match(/push\(\s*\[\s*\d+\s*,\s*"(.+?)"\s*\]\s*\)/);
-          if (contentMatch) {
-            try {
-              // Unescape the string (it's double-escaped JSON)
-              var decoded = JSON.parse('"' + contentMatch[1] + '"');
-              jsonChunks.push(decoded);
-            } catch (e) {
-              // Not valid JSON, skip
+      for (var i = 0; i < scripts.length; i++) {
+        var text = scripts[i].textContent || '';
+        // Match self.__next_f.push([1,"..."]) — use greedy match for large payloads
+        var pushRegex = /self\.__next_f\.push\(\s*\[\s*1\s*,\s*"((?:[^"\\]|\\.)*)"\s*\]\s*\)/g;
+        var match;
+        while ((match = pushRegex.exec(text)) !== null) {
+          try {
+            var decoded = JSON.parse('"' + match[1] + '"');
+            jsonChunks.push(decoded);
+          } catch (e) { /* skip malformed chunks */ }
+        }
+      }
+
+      // Concatenate and find project data blobs
+      var allText = jsonChunks.join('');
+      // Look for large JSON objects with project-like structure
+      var jsonStart = -1;
+      for (var k = 0; k < allText.length; k++) {
+        if (allText[k] === '{' && allText[k + 1] === '"') {
+          jsonStart = k;
+          break;
+        }
+      }
+
+      if (jsonStart >= 0) {
+        // Find the largest balanced JSON object
+        var remaining = allText.substring(jsonStart);
+        var bestEnd = -1;
+        var depth = 0;
+        for (var k = 0; k < remaining.length; k++) {
+          if (remaining[k] === '{') depth++;
+          else if (remaining[k] === '}') {
+            depth--;
+            if (depth === 0) { bestEnd = k; break; }
+          }
+        }
+        if (bestEnd > 100) { // Must be substantial
+          var parsed = JSON.parse(remaining.substring(0, bestEnd + 1));
+          // Check if it looks like project data (objects with profile subkey)
+          var keys = Object.keys(parsed);
+          if (keys.length > 5 && parsed[keys[0]] && parsed[keys[0]].profile) {
+            var projects = processNearcatalogItems(parsed, engine);
+            if (projects.length > 0) {
+              engine.reportProgress(projects.length, projects.length,
+                'Done — ' + projects.length + ' projects from page data');
+              return projects;
             }
           }
         }
       }
+    } catch (e) {
+      console.warn('[NEARCatalog] RSC parse failed:', e.message);
     }
 
-    // Try to find project data in the concatenated chunks
-    var allText = jsonChunks.join('');
-
-    // Look for JSON object patterns that look like project data
-    // NEARCatalog typically has {slug: {profile: {name, tagline, tags, ...}}}
-    var objectMatches = allText.match(/\{[^{}]*"profile"\s*:\s*\{[^}]*"name"[^}]*\}/g);
-    if (!objectMatches || objectMatches.length === 0) {
-      // Try finding a large JSON blob
-      var braceStart = allText.indexOf('{"');
-      if (braceStart >= 0) {
-        try {
-          // Try to parse from the first { to the end
-          var remaining = allText.substring(braceStart);
-          // Find balanced braces
-          var depth = 0;
-          var end = -1;
-          for (var k = 0; k < remaining.length; k++) {
-            if (remaining[k] === '{') depth++;
-            else if (remaining[k] === '}') {
-              depth--;
-              if (depth === 0) { end = k; break; }
-            }
-          }
-          if (end > 0) {
-            var parsed = JSON.parse(remaining.substring(0, end + 1));
-            return processItems(parsed, engine);
-          }
-        } catch (e) {
-          // Fall through
-        }
-      }
-    }
-
-    // Strategy 3: Fall back to DOM scraping
+    // Strategy 3: DOM fallback — project links
     engine.reportProgress(0, 100, 'Falling back to DOM extraction...');
     await engine.sleep(1000);
 
-    // NEARCatalog renders project cards with links
-    var links = document.querySelectorAll('a[href*="/project/"], a[href*="/app/"]');
+    var links = document.querySelectorAll('a[href*="/project/"]');
     if (links.length === 0) {
-      // Try scrolling to load content
       await engine.scrollToLoadAll({ maxScrolls: 10, delay: 800 });
-      links = document.querySelectorAll('a[href*="/project/"], a[href*="/app/"]');
+      links = document.querySelectorAll('a[href*="/project/"]');
     }
 
     var seen = {};
+    var projects = [];
     var total = links.length;
     engine.reportProgress(0, total, 'Found ' + total + ' project links');
 
     for (var i = 0; i < links.length && engine.isScanning(); i++) {
-      var link = links[i];
-      var href = link.getAttribute('href') || '';
-      var slugMatch = href.match(/\/(?:project|app)\/([^/?#]+)/);
+      var href = links[i].getAttribute('href') || '';
+      var slugMatch = href.match(/\/project\/([^/?#]+)/);
       if (!slugMatch || seen[slugMatch[1]]) continue;
 
       var slug = slugMatch[1];
       seen[slug] = true;
 
-      var name = '';
-      // Try to get name from link text or child elements
-      var nameEl = link.querySelector('h2, h3, h4, [class*="name"], [class*="title"]');
-      if (nameEl) {
-        name = nameEl.textContent.trim();
-      } else {
-        name = link.textContent.trim().split('\n')[0].trim();
-      }
-
-      // Clean up name (remove extra whitespace, limit length)
+      var nameEl = links[i].querySelector('h2, h3, h4, [class*="name"], [class*="title"]');
+      var name = nameEl ? nameEl.textContent.trim() : links[i].textContent.trim().split('\n')[0].trim();
       name = name.replace(/\s+/g, ' ').substring(0, 100);
 
       if (name && name.length > 1) {
@@ -164,45 +140,44 @@ window.EcoScraperSites.push({
   }
 });
 
-// Helper: process a map or array of project items
-function processItems(items, engine) {
+// Process the NEARCatalog API/page data — object keyed by slug
+// Each value: { slug, profile: { name, tagline, tags, image, phase, lnc } }
+function processNearcatalogItems(data, engine) {
   var projects = [];
-  var entries;
+  if (!data || typeof data !== 'object') return projects;
 
-  if (Array.isArray(items)) {
-    entries = items.map(function(item, idx) { return [String(idx), item]; });
-  } else if (typeof items === 'object') {
-    entries = Object.entries(items);
-  } else {
-    return projects;
-  }
-
+  var entries = Object.entries(data);
   var total = entries.length;
   engine.reportProgress(0, total, 'Processing ' + total + ' projects...');
 
   for (var i = 0; i < entries.length && engine.isScanning(); i++) {
     var slug = entries[i][0];
     var item = entries[i][1];
+    if (!item || typeof item !== 'object') continue;
 
-    // Handle nested profile structure: {slug: {profile: {...}}}
     var profile = item.profile || item;
-
     var name = profile.name || profile.title || slug;
     var description = profile.tagline || profile.oneliner || profile.description || '';
+
+    // Tags can be {slug: "Label"} or ["tag1", "tag2"] or "tag"
     var tags = profile.tags || profile.categories || {};
     var category = '';
-
     if (typeof tags === 'object' && !Array.isArray(tags)) {
-      category = Object.keys(tags).join(', ');
+      category = Object.values(tags).join(', ');
     } else if (Array.isArray(tags)) {
       category = tags.join(', ');
     } else if (typeof tags === 'string') {
       category = tags;
     }
 
-    var website = profile.website || profile.url || '';
-    var twitter = profile.twitter || '';
-    if (twitter && !twitter.startsWith('@')) twitter = '@' + twitter;
+    // Social links — API has linktree on detail pages, but not on /projects
+    // Pull what we can from profile
+    var linktree = profile.linktree || {};
+    var website = linktree.website || profile.website || profile.url || '';
+    var twitter = linktree.twitter || profile.twitter || '';
+    if (twitter && !twitter.startsWith('http') && !twitter.startsWith('@')) {
+      twitter = '@' + twitter;
+    }
 
     projects.push({
       name: name,
@@ -211,17 +186,15 @@ function processItems(items, engine) {
       category: category,
       website: website,
       twitter: twitter,
-      telegram: profile.telegram || '',
-      discord: profile.discord || '',
+      telegram: linktree.telegram || profile.telegram || '',
+      discord: linktree.discord || profile.discord || '',
+      github: linktree.github || profile.github || '',
       chain: 'NEAR',
       nearcatalogUrl: 'https://nearcatalog.xyz/project/' + slug
     });
 
-    if (i % 20 === 0 || i === entries.length - 1) {
+    if (i % 50 === 0 || i === entries.length - 1) {
       engine.reportProgress(projects.length, total, 'Processing: ' + name);
-    }
-    if (i % 50 === 0) {
-      // yield to UI
     }
   }
 
