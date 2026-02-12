@@ -3,7 +3,9 @@ CSV utilities for ecosystem research data.
 """
 
 import csv
+import os
 import re
+import tempfile
 from pathlib import Path
 from typing import List, Dict, Optional
 
@@ -59,15 +61,42 @@ def write_csv(
     output_path: Path,
     columns: Optional[List[str]] = None,
 ):
-    """Write rows to CSV with correct column order."""
+    """
+    Write rows to CSV with correct column order.
+
+    Uses atomic write: writes to a temp file in the same directory, then
+    os.replace() for an atomic swap. This prevents data loss if the process
+    is interrupted mid-write (the original file stays intact or is fully
+    replaced, never truncated).
+    """
     cols = columns or CORRECT_COLUMNS
+    output_path = Path(output_path)
     output_path.parent.mkdir(parents=True, exist_ok=True)
-    with open(output_path, "w", newline="", encoding="utf-8") as f:
-        writer = csv.DictWriter(f, fieldnames=cols)
-        writer.writeheader()
-        for row in rows:
-            clean_row = {k: sanitize_csv_field(row.get(k, "")) for k in cols}
-            writer.writerow(clean_row)
+
+    # Write to temp file in the same directory (required for atomic os.replace)
+    fd, tmp_path = tempfile.mkstemp(
+        suffix=".tmp",
+        prefix=f".{output_path.name}.",
+        dir=output_path.parent,
+    )
+    try:
+        with os.fdopen(fd, "w", newline="", encoding="utf-8") as f:
+            writer = csv.DictWriter(f, fieldnames=cols)
+            writer.writeheader()
+            for row in rows:
+                clean_row = {k: sanitize_csv_field(row.get(k, "")) for k in cols}
+                writer.writerow(clean_row)
+            f.flush()
+            os.fsync(f.fileno())
+        # Atomic replace — POSIX guarantees this is atomic on same filesystem
+        os.replace(tmp_path, output_path)
+    except Exception:
+        # Clean up temp file on failure
+        try:
+            os.unlink(tmp_path)
+        except OSError:
+            pass
+        raise
 
 
 def append_csv(
