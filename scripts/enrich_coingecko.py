@@ -235,10 +235,16 @@ def enrich_csv(
 
     cg_matched = 0
     enriched = 0
+    skipped_incremental = 0
 
     for i, row in enumerate(process_rows):
         name = row.get("Project Name", "").strip()
         if not name:
+            continue
+
+        # Incremental: skip rows already enriched by CoinGecko
+        if "CoinGecko" in row.get("Evidence & Source URLs", ""):
+            skipped_incremental += 1
             continue
 
         # O(1) lookup — no API call needed
@@ -311,12 +317,13 @@ def enrich_csv(
         if not dry_run:
             row.update(updates)
 
-    # Write output
+    if skipped_incremental > 0:
+        print(f"\n  Skipped {skipped_incremental} already-enriched rows (incremental)")
+
+    # Write output (in-place for pipeline composability)
     if not dry_run and enriched > 0:
-        suffix = "_cg_enriched" if "_enriched" not in csv_path.stem else "_cg"
-        output_path = csv_path.with_name(csv_path.stem + suffix + ".csv")
-        write_csv(rows, output_path)
-        print(f"\nEnriched CSV written to: {output_path}")
+        write_csv(rows, csv_path)
+        print(f"\nEnriched CSV written to: {csv_path}")
     elif dry_run:
         print("\n[DRY RUN] No files written.")
 

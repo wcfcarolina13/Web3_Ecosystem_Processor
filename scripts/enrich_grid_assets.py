@@ -85,10 +85,16 @@ def enrich_from_grid(
         print(f"  Processing first {limit}")
 
     enriched = 0
+    skipped_incremental = 0
 
     for idx, (row_idx, row) in enumerate(grid_rows):
         name = row.get("Project Name", "").strip()
         matched_url = row.get("Matched URL", "").strip()
+
+        # Incremental: skip rows already enriched by Grid
+        if "Grid confirms" in row.get("Notes", ""):
+            skipped_incremental += 1
+            continue
 
         print(f"  [{idx+1}/{len(grid_rows)}] {name}", end="", flush=True)
 
@@ -152,11 +158,13 @@ def enrich_from_grid(
         if not dry_run:
             rows[row_idx].update(updates)
 
-    # Write output
+    if skipped_incremental > 0:
+        print(f"\n  Skipped {skipped_incremental} already-enriched rows (incremental)")
+
+    # Write output (in-place for pipeline composability)
     if not dry_run and enriched > 0:
-        output_path = csv_path.with_name(csv_path.stem + "_grid_enriched.csv")
-        write_csv(rows, output_path)
-        print(f"\nGrid-enriched CSV: {output_path}")
+        write_csv(rows, csv_path)
+        print(f"\nGrid-enriched CSV written to: {csv_path}")
     elif dry_run:
         print("\n[DRY RUN] No files written.")
 

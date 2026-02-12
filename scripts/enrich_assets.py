@@ -233,7 +233,7 @@ def enrich_csv(
     """
     Enrich an ecosystem CSV with DefiLlama token data.
 
-    Returns (total_rows, matched_slugs, enriched_rows).
+    Returns (total_rows, matched_slugs, enriched_count).
     """
     # Load chain config for DefiLlama chain slug
     chain_config = load_chain_config(chain)
@@ -253,21 +253,25 @@ def enrich_csv(
 
     matched = 0
     enriched = 0
-    enriched_rows = []
+    skipped_incremental = 0
 
     for i, row in enumerate(rows):
         name = row.get("Project Name", "").strip()
         website = row.get("Website", "").strip()
 
         if not name:
-            enriched_rows.append(row)
+            continue
+
+        # Incremental: skip rows already enriched by DefiLlama
+        evidence = row.get("Evidence & Source URLs", "")
+        if "DefiLlama" in evidence or "defillama.com" in evidence:
+            skipped_incremental += 1
             continue
 
         # Try to find DefiLlama slug
         slug = get_protocol_slug(name, website, protocols_index)
 
         if not slug:
-            enriched_rows.append(row)
             continue
 
         matched += 1
@@ -279,7 +283,6 @@ def enrich_csv(
 
         if not proto_data:
             print(" (no data)")
-            enriched_rows.append(row)
             continue
 
         # Extract token holdings
@@ -297,7 +300,6 @@ def enrich_csv(
 
         if not holdings:
             print(" (no token breakdown)")
-            enriched_rows.append(row)
             continue
 
         # Classify stablecoin support
@@ -391,13 +393,13 @@ def enrich_csv(
         else:
             print(" (no target assets found)")
 
-        enriched_rows.append(row)
+    if skipped_incremental > 0:
+        print(f"\n  Skipped {skipped_incremental} already-enriched rows (incremental)")
 
-    # Write output
+    # Write output (in-place for pipeline composability)
     if not dry_run and enriched > 0:
-        output_path = csv_path.with_name(csv_path.stem + "_enriched.csv")
-        write_csv(enriched_rows, output_path)
-        print(f"\nEnriched CSV written to: {output_path}")
+        write_csv(rows, csv_path)
+        print(f"\nEnriched CSV written to: {csv_path}")
     elif dry_run:
         print("\n[DRY RUN] No files written.")
 
