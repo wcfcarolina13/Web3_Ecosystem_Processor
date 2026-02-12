@@ -201,14 +201,24 @@ def merge_rows(group: List[Dict], is_fuzzy: bool = False) -> Dict:
     if len(sources) > 1:
         base["Source"] = "; ".join(sources)
 
-    # Annotate fuzzy matches
+    # Annotate dedup in Notes — always include merged source info
+    dedup_parts = []
     if is_fuzzy and len(original_names) > 1:
-        fuzzy_note = f"(fuzzy dedup: merged from {'; '.join(original_names)})"
+        dedup_parts.append(f"fuzzy dedup: merged from {'; '.join(original_names)}")
+    elif len(group) > 1:
+        dedup_parts.append(f"dedup: merged {len(group)} rows")
+
+    # Add source info for merged rows so researchers know provenance
+    if len(sources) > 1:
+        dedup_parts.append(f"sources: {'; '.join(sources)}")
+
+    if dedup_parts:
+        dedup_note = f"({' | '.join(dedup_parts)})"
         existing_notes = base.get("Notes", "").strip()
         if existing_notes:
-            base["Notes"] = existing_notes + " | " + fuzzy_note
+            base["Notes"] = existing_notes + " | " + dedup_note
         else:
-            base["Notes"] = fuzzy_note
+            base["Notes"] = dedup_note
 
     return base
 
