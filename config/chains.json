@@ -85,6 +85,51 @@
           "_status": "needs_scraper"
         }
       }
+    },
+    {
+      "id": "kava",
+      "name": "Kava",
+      "target_assets": [
+        "USDT",
+        "USDC"
+      ],
+      "sources": {}
+    },
+    {
+      "id": "liquid-network",
+      "name": "Liquid Network",
+      "target_assets": [
+        "USDT",
+        "USDC"
+      ],
+      "sources": {}
+    },
+    {
+      "id": "tezos",
+      "name": "Tezos",
+      "target_assets": [
+        "USDT",
+        "USDC"
+      ],
+      "sources": {}
+    },
+    {
+      "id": "polkadot",
+      "name": "Polkadot",
+      "target_assets": [
+        "USDT",
+        "USDC"
+      ],
+      "sources": {}
+    },
+    {
+      "id": "kaia",
+      "name": "Kaia",
+      "target_assets": [
+        "USDT",
+        "USDC"
+      ],
+      "sources": {}
     }
   ],
   "_comment": "Add new chains by appending to the chains array. Not all sources are required per chain.",
