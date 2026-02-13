@@ -22,6 +22,7 @@ from .queries import (
     GET_PRODUCT_TYPES_QUERY,
     GET_ASSET_TYPES_QUERY,
     GET_ROOT_WITH_SUPPORT_QUERY,
+    GET_ROOT_BY_ID_WITH_SUPPORT_QUERY,
     SEARCH_ROOTS_BY_NAME_QUERY,
     SEARCH_ROOTS_BY_URL_WITH_SUPPORT_QUERY,
     INTROSPECTION_QUERY,
@@ -205,6 +206,17 @@ class GridAPIClient:
         )
         roots = data.get("roots", [])
         return roots[0] if roots else {}
+
+    def get_root_by_id_with_support(self, root_id: str) -> List[Dict]:
+        """
+        Get a root by its ID (e.g., 'id175446') with full product→asset
+        support data. Used when we have a root ID (from admin URLs or
+        the Root ID column) but not a slug or urlMain.
+        """
+        data = self._execute_query(
+            GET_ROOT_BY_ID_WITH_SUPPORT_QUERY, {"rootId": root_id}
+        )
+        return data.get("roots", [])
 
     # ── Reference Data ────────────────────────────────────────────
 

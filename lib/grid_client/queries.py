@@ -192,6 +192,35 @@ query GetRootWithSupport($slug: String!) {
 }
 """
 
+# Get root by ID with full product→asset support details
+# Used when we have a root ID (e.g., from admin URLs) but not a slug or urlMain
+GET_ROOT_BY_ID_WITH_SUPPORT_QUERY = """
+query GetRootByID($rootId: String!) {
+  roots(where: { id: { _eq: $rootId } }, limit: 1) {
+    id
+    slug
+    urlMain
+    profileInfos {
+      id
+      name
+      profileType { name }
+      profileStatus { name }
+    }
+    products {
+      id
+      name
+      productType { name }
+      productStatus { name }
+      isMainProduct
+      productAssetRelationships {
+        asset { id name ticker }
+        assetSupportType { id name slug }
+      }
+    }
+  }
+}
+"""
+
 # Search roots by name (returns profiles + products + asset support)
 SEARCH_ROOTS_BY_NAME_QUERY = """
 query SearchRootsByName($search: String!, $limit: Int) {

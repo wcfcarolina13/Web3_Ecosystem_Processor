@@ -16,6 +16,8 @@ from .data_service import (
     compute_website_scan_details,
     compute_website_health,
     get_project_table,
+    get_project_table_full,
+    get_all_columns,
     get_filter_options,
 )
 
@@ -80,6 +82,7 @@ def table():
     chain = _get_chain()
     chains = get_available_chains()
     rows = load_chain_data(chain)
+    view = request.args.get("view", "summary")  # "summary" or "full"
 
     filters = {
         "search": request.args.get("search", ""),
@@ -90,8 +93,14 @@ def table():
         "website_health": request.args.get("website_health", ""),
     }
 
-    projects = get_project_table(rows, filters)
     filter_options = get_filter_options(rows)
+
+    if view == "full":
+        projects = get_project_table_full(rows, filters)
+        all_columns = get_all_columns(rows)
+    else:
+        projects = get_project_table(rows, filters)
+        all_columns = []
 
     return render_template(
         "table.html",
@@ -103,6 +112,8 @@ def table():
         total=len(rows),
         shown=len(projects),
         show_chain_selector=True,
+        view=view,
+        all_columns=all_columns,
     )
 
 

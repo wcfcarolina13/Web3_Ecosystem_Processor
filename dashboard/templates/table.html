@@ -11,6 +11,7 @@
 <section class="table-filters">
     <form method="get" action="/table" class="filter-form">
         <input type="hidden" name="chain" value="{{ chain }}">
+        <input type="hidden" name="view" value="{{ view }}">
 
         <div class="filter-group">
             <label for="search">Search</label>
@@ -72,12 +73,63 @@
         </div>
     </form>
 
-    <div class="table-count">
-        Showing <strong>{{ shown }}</strong> of {{ total }} projects
+    <div class="table-meta">
+        <div class="table-count">
+            Showing <strong>{{ shown }}</strong> of {{ total }} projects
+        </div>
+        <div class="view-toggle">
+            <label>View:</label>
+            {% if view == 'full' %}
+                <a href="/table?chain={{ chain }}&view=summary{% if filters.search %}&search={{ filters.search }}{% endif %}{% if filters.category %}&category={{ filters.category }}{% endif %}{% if filters.source %}&source={{ filters.source }}{% endif %}{% if filters.grid_matched %}&grid_matched={{ filters.grid_matched }}{% endif %}{% if filters.has_evidence %}&has_evidence={{ filters.has_evidence }}{% endif %}{% if filters.website_health %}&website_health={{ filters.website_health }}{% endif %}" class="btn btn-sm">Summary</a>
+                <span class="btn btn-sm btn-active">Full</span>
+            {% else %}
+                <span class="btn btn-sm btn-active">Summary</span>
+                <a href="/table?chain={{ chain }}&view=full{% if filters.search %}&search={{ filters.search }}{% endif %}{% if filters.category %}&category={{ filters.category }}{% endif %}{% if filters.source %}&source={{ filters.source }}{% endif %}{% if filters.grid_matched %}&grid_matched={{ filters.grid_matched }}{% endif %}{% if filters.has_evidence %}&has_evidence={{ filters.has_evidence }}{% endif %}{% if filters.website_health %}&website_health={{ filters.website_health }}{% endif %}" class="btn btn-sm">Full</a>
+            {% endif %}
+        </div>
     </div>
 </section>
 
-<!-- Project Table -->
+{% if view == 'full' %}
+<!-- Full View: All CSV Columns -->
+<section class="table-container table-full-view">
+    <table class="project-table" id="project-table">
+        <thead>
+            <tr>
+                {% for col in all_columns %}
+                <th class="sortable" data-col="{{ loop.index0 }}">{{ col }}</th>
+                {% endfor %}
+            </tr>
+        </thead>
+        <tbody>
+            {% for p in projects %}
+            <tr>
+                {% for col in all_columns %}
+                {% set val = p.get(col, '') %}
+                {% if col == 'Website' or col == 'Matched URL' or col == 'X Link' %}
+                <td class="link-cell" title="{{ val }}">
+                    {% if val and val.startswith('http') %}
+                    <a href="{{ val }}" target="_blank" rel="noopener">{{ val | truncate(35) }}</a>
+                    {% else %}
+                    {{ val | truncate(35) }}
+                    {% endif %}
+                </td>
+                {% elif col == 'Notes' or col == 'Evidence & Source URLs' %}
+                <td class="notes-cell" title="{{ val }}">{{ val | truncate(80) }}</td>
+                {% elif col == 'Project Name' %}
+                <td class="name-cell sticky-col"><strong>{{ val }}</strong></td>
+                {% else %}
+                <td title="{{ val }}">{{ val | truncate(40) }}</td>
+                {% endif %}
+                {% endfor %}
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</section>
+
+{% else %}
+<!-- Summary View: Curated 10 Columns -->
 <section class="table-container">
     <table class="project-table" id="project-table">
         <thead>
@@ -121,6 +173,7 @@
         </tbody>
     </table>
 </section>
+{% endif %}
 
 {% endblock %}
 

@@ -54,6 +54,13 @@ EXPAND_MARKER = "expanded-grid"  # Evidence marker for incremental skip
 
 ALL_STRATEGIES = ["batch-name", "batch-url", "slug", "twitter"]
 
+# Grid statuses that indicate a positive match (row should be skipped by expand).
+# Statuses like "Not found" or unknown values are treated as unmatched.
+POSITIVE_GRID_STATUSES = {
+    "Active", "Inactive", "Acquired", "Announced", "Live", "Found",
+    "Closed", "Dormant", "Archived", "Pending",
+}
+
 # Domains too generic for URL-based matching (social platforms, major chains, etc.)
 EXCLUDED_DOMAINS = {
     "x.com", "twitter.com", "t.me", "telegram.org", "discord.gg", "discord.com",
@@ -632,11 +639,19 @@ def expand_matches(
     rows = load_csv(csv_path)
     total = len(rows)
 
-    # Identify unmatched rows (no Grid Status AND no expand marker)
+    # Identify unmatched rows — only skip rows with a POSITIVE Grid Status
+    # or an expand marker from a previous run.
+    # Researcher data may have "❌ Not found" or other negative statuses —
+    # these should NOT be treated as matched.
     unmatched = []
     for i, row in enumerate(rows):
-        if row.get("The Grid Status", "").strip():
-            continue
+        grid_status = row.get("The Grid Status", "").strip()
+        if grid_status:
+            # Strip emoji prefixes (e.g., "✅ Found" → "Found", "❌ Not found" → "Not found")
+            clean_status = re.sub(r'^[^\w]+', '', grid_status).strip()
+            # Skip if it's a known positive status OR has ✅ emoji
+            if clean_status in POSITIVE_GRID_STATUSES or "✅" in grid_status:
+                continue
         if EXPAND_MARKER in row.get("Evidence & Source URLs", ""):
             continue
         # Skip rows with cleared false positive markers

@@ -18,6 +18,7 @@ import sys
 import time
 from pathlib import Path
 from typing import Dict, List, Tuple
+from urllib.parse import urlparse, parse_qs
 
 # Add project root to path
 sys.path.insert(0, str(Path(__file__).parent.parent))
@@ -72,9 +73,10 @@ def enrich_from_grid(
     total = len(rows)
     print(f"  {total} rows total")
 
-    # Filter to rows with Grid matches (have Matched URL)
+    # Filter to rows with Grid matches (have Matched URL OR Root ID)
     grid_rows = [(i, row) for i, row in enumerate(rows)
-                 if row.get("Matched URL", "").strip()
+                 if (row.get("Matched URL", "").strip()
+                     or row.get("Root ID", "").strip())
                  and "false positive" not in row.get("Notes", "").lower()]
 
     matched_count = len(grid_rows)
@@ -102,8 +104,23 @@ def enrich_from_grid(
         if idx > 0:
             time.sleep(REQUEST_DELAY)
 
-        # Query Grid for asset support using the matched URL
-        roots = client.search_with_support_by_url(matched_url)
+        # Determine the best query method:
+        # 1. Root ID (from column or extracted from admin URL) → query by ID
+        # 2. Normal URL → query by URL
+        root_id = row.get("Root ID", "").strip()
+        if not root_id and matched_url and "admin.thegrid.id" in matched_url:
+            # Extract rootId from admin URL params (e.g., ?rootId=id175446)
+            try:
+                parsed = urlparse(matched_url)
+                root_id = parse_qs(parsed.query).get("rootId", [""])[0]
+            except Exception:
+                pass
+
+        roots = []
+        if root_id:
+            roots = client.get_root_by_id_with_support(root_id)
+        if not roots and matched_url and "admin.thegrid.id" not in matched_url:
+            roots = client.search_with_support_by_url(matched_url)
         if not roots:
             print(" -> no root data")
             continue

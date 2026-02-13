@@ -466,6 +466,60 @@ def get_project_table(rows: List[Dict], filters: dict) -> List[Dict]:
     return result
 
 
+def get_all_columns(rows: List[Dict]) -> List[str]:
+    """Get all column headers present in the CSV data, preserving order."""
+    if not rows:
+        return []
+    # Use the first row's keys (csv.DictReader preserves header order)
+    return list(rows[0].keys())
+
+
+def get_project_table_full(rows: List[Dict], filters: dict) -> List[Dict]:
+    """
+    Return filtered project rows with ALL columns (for full view).
+    Same filter logic as get_project_table() but returns raw row dicts.
+    """
+    result = []
+    search = filters.get("search", "").strip().lower()
+    cat_filter = filters.get("category", "").strip()
+    source_filter = filters.get("source", "").strip()
+    grid_filter = filters.get("grid_matched", "").strip()
+    evidence_filter = filters.get("has_evidence", "").strip()
+    health_filter = filters.get("website_health", "").strip()
+
+    for r in rows:
+        name = r.get("Project Name", r.get("Name", "")).strip()
+
+        # Apply same filters
+        if search and search not in name.lower():
+            continue
+        if cat_filter and cat_filter.lower() not in r.get("Category", "").lower():
+            continue
+        if source_filter and source_filter.lower() not in r.get("Source", "").lower():
+            continue
+        if grid_filter == "yes" and not _is_nonempty(r.get("Profile Name", "")):
+            continue
+        if grid_filter == "no" and _is_nonempty(r.get("Profile Name", "")):
+            continue
+        if evidence_filter == "yes" and not _is_nonempty(r.get("Evidence & Source URLs", "")):
+            continue
+        if evidence_filter == "no" and _is_nonempty(r.get("Evidence & Source URLs", "")):
+            continue
+
+        health = _get_health_status(r)
+        if health_filter == "alive" and health != "alive":
+            continue
+        if health_filter == "dead" and health not in ("dead", "timeout", "dns_fail", "error"):
+            continue
+        if health_filter == "unchecked" and health:
+            continue
+
+        # Return full row with all columns
+        result.append(dict(r))
+
+    return result
+
+
 def get_filter_options(rows: List[Dict]) -> dict:
     """Get unique filter values for dropdowns."""
     categories = set()

@@ -9,7 +9,7 @@ import csv
 import io
 import re
 from typing import Dict, List, Optional, Tuple
-from urllib.parse import urlparse
+from urllib.parse import urlparse, parse_qs
 
 from .columns import CORRECT_COLUMNS, empty_row
 from .matching import find_match, normalize_name, similarity
@@ -605,4 +605,29 @@ def execute_merge(
         existing_rows.append(new)
         added_count += 1
 
+    # Post-merge normalization: extract Root ID from admin URLs where missing
+    _normalize_admin_urls(existing_rows)
+
     return existing_rows, added_count, updated_count, skipped_count
+
+
+def _normalize_admin_urls(rows: List[Dict[str, str]]) -> int:
+    """
+    For rows with admin-style Matched URLs (admin.thegrid.id/?rootId=...),
+    extract the Root ID into the Root ID column if not already set.
+    Returns count of rows normalized.
+    """
+    count = 0
+    for row in rows:
+        matched_url = row.get("Matched URL", "")
+        root_id = row.get("Root ID", "").strip()
+        if not root_id and "admin.thegrid.id" in matched_url and "rootId=" in matched_url:
+            try:
+                parsed = urlparse(matched_url)
+                extracted_id = parse_qs(parsed.query).get("rootId", [""])[0]
+                if extracted_id:
+                    row["Root ID"] = extracted_id
+                    count += 1
+            except Exception:
+                pass
+    return count

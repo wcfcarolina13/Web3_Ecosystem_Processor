@@ -421,6 +421,81 @@ footer code {
     color: var(--text-muted);
 }
 
+/* ── Table Meta (count + view toggle) ── */
+.table-meta {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-top: 10px;
+}
+
+.view-toggle {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.view-toggle label {
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    color: var(--text-muted);
+}
+
+.btn-sm {
+    padding: 3px 10px;
+    font-size: 11px;
+    border-radius: 4px;
+}
+
+.btn-active {
+    background: var(--primary);
+    color: white;
+    border-color: var(--primary);
+    cursor: default;
+}
+
+/* ── Full View Table ── */
+.table-full-view {
+    overflow-x: auto;
+    max-width: 100%;
+}
+
+.table-full-view .project-table {
+    min-width: max-content;
+}
+
+.table-full-view .project-table td {
+    max-width: 300px;
+    white-space: nowrap;
+}
+
+.table-full-view .sticky-col {
+    position: sticky;
+    left: 0;
+    z-index: 5;
+    background: var(--surface);
+    border-right: 2px solid var(--border);
+    min-width: 200px;
+}
+
+.table-full-view thead th:first-child {
+    position: sticky;
+    left: 0;
+    z-index: 15;
+    background: var(--bg);
+    border-right: 2px solid var(--border);
+}
+
+.notes-cell {
+    max-width: 350px;
+    font-size: 12px;
+    color: var(--text-muted);
+    white-space: normal;
+    word-break: break-word;
+}
+
 /* Badges */
 .badge {
     display: inline-block;
