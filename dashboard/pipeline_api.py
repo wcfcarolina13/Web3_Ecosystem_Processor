@@ -91,6 +91,7 @@ def pipeline_page():
         step_descriptions=STEP_DESCRIPTIONS,
         is_running=pipeline_manager.is_running,
         is_discovering=scraper_manager.is_running,
+        show_chain_selector=False,
     )
 
 

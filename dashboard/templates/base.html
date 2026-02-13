@@ -14,8 +14,9 @@
             <nav>
                 <a href="/?chain={{ chain }}" class="{% if request.path == '/' %}active{% endif %}">Dashboard</a>
                 <a href="/table?chain={{ chain }}" class="{% if request.path == '/table' %}active{% endif %}">Projects</a>
-                <a href="/pipeline?chain={{ chain }}" class="{% if request.path == '/pipeline' %}active{% endif %}">Pipeline</a>
-                <a href="/guide?chain={{ chain }}" class="{% if request.path == '/guide' %}active{% endif %}">Guide</a>
+                <a href="/pipeline" class="{% if request.path == '/pipeline' %}active{% endif %}">Pipeline</a>
+                <a href="/guide" class="{% if request.path == '/guide' %}active{% endif %}">Guide</a>
+                {% if show_chain_selector %}
                 <form id="chain-form" method="get" action="{{ request.path }}">
                     <select name="chain" onchange="this.form.submit()">
                         {% for c in chains %}
@@ -25,6 +26,7 @@
                         {% endfor %}
                     </select>
                 </form>
+                {% endif %}
             </nav>
         </div>
     </header>
@@ -35,8 +37,12 @@
 
     <footer>
         <small>
+            {% if show_chain_selector %}
             Chain: <strong>{{ chain | upper }}</strong>
             {% block footer_extra %}{% endblock %}
+            {% else %}
+            {% block footer_neutral %}{% endblock %}
+            {% endif %}
         </small>
     </footer>
 

@@ -61,6 +61,7 @@ def index():
         grid_status=grid_status,
         website_scan=website_scan,
         website_health=website_health,
+        show_chain_selector=True,
     )
 
 
@@ -69,7 +70,8 @@ def guide():
     """User guide page."""
     chain = _get_chain()
     chains = get_available_chains()
-    return render_template("guide.html", chain=chain, chains=chains)
+    return render_template("guide.html", chain=chain, chains=chains,
+                           show_chain_selector=False)
 
 
 @bp.route("/table")
@@ -100,6 +102,7 @@ def table():
         filter_options=filter_options,
         total=len(rows),
         shown=len(projects),
+        show_chain_selector=True,
     )
 
 
