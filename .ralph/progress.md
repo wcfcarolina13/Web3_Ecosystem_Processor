@@ -177,3 +177,23 @@ This is how Ralph maintains continuity across iterations.
 - `639480d` — feat: add Import Wizard for merging external researcher data
 - `3c4c8f7` — feat: rename Chain to Ecosystem/Chain, auto-add ecosystems, combined download
 
+### Session 11 — 2026-02-13 (Manual)
+
+**Accomplished:**
+- **Grid enrichment compatibility fixes** for imported researcher data:
+  - **expand_grid_matches.py skip logic fix**: Only skip rows with positive Grid statuses (Active, Found, ✅). Rows with "❌ Not found" are now correctly treated as unmatched and re-processed. Added `POSITIVE_GRID_STATUSES` set.
+  - **Root ID query**: New `GET_ROOT_BY_ID_WITH_SUPPORT_QUERY` in Grid client for looking up roots by ID. New `get_root_by_id_with_support()` method.
+  - **Admin URL handling in enrich_grid_assets.py**: Detects admin-style URLs (`admin.thegrid.id/?rootId=...`), extracts Root ID, and queries by ID instead of URL. Falls back to URL search for normal URLs.
+  - **Root ID normalization in import_engine.py**: Post-merge step extracts Root ID from admin URLs into the Root ID column. `_normalize_admin_urls()` helper function.
+- **Dynamic Projects table**:
+  - View toggle (Summary/Full) in the table header
+  - Summary view: existing 10-column curated view (default)
+  - Full view: ALL CSV columns rendered dynamically, horizontally scrollable, sticky first column
+  - New `get_project_table_full()` and `get_all_columns()` in data_service.py
+  - Works with non-standard CSV schemas (Aptos 34-column format)
+  - Notes, Root ID, Matched via, and all other columns now visible
+
+**Commits:**
+- `ee596f9` — feat: fix Grid enrichment compatibility with imported data + dynamic Projects table
+- `6b4ead8` — data: add imported ecosystem data (Kava, Liquid Network, Tezos, Polkadot, Kaia)
+
