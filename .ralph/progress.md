@@ -127,3 +127,26 @@ This is how Ralph maintains continuity across iterations.
   - `dashboard/templates/base.html`: Added Pipeline nav link
   - `dashboard/static/style.css`: Pipeline page styles with step state animations
 
+### Session 8 — 2026-02-12 (Manual)
+
+**Accomplished:**
+- **Server-side scraping + Add Chain + User Guide**:
+  - `dashboard/scraper.py`: DefiLlama API discovery (`discover_defillama()`, `merge_discovered_rows()`)
+  - `dashboard/scraper_manager.py`: Thread-safe background discovery executor (mirrors PipelineManager)
+  - `dashboard/pipeline_api.py`: 5 new API routes — add chain, discover sources/start/status, download extension ZIP
+  - `dashboard/templates/pipeline.html`: Panel 0 (Add Chain) + Panel 1 (Discover Projects) with progress bar
+  - `dashboard/templates/guide.html`: 9-section user guide with extension install, security docs, column reference
+  - `dashboard/app.py`: `/guide` route
+  - Mutual exclusion between pipeline and discovery jobs (prevents concurrent CSV modification)
+- **Stale data detection** (`scripts/check_websites.py`):
+  - HTTP HEAD health checks with GET fallback (handles 405), 5 classifications: alive/dead/timeout/dns_fail/error
+  - Incremental: `health-check: <status> (<code>)` markers in Evidence, `--recheck-dead` flag
+  - Integrated as pipeline step 8 (`stale`), dashboard Section 8 (Website Health doughnut chart + dead projects list)
+  - Health filter on Projects table (alive/dead/unchecked badges)
+- **UX: Ecosystem selector scoping**:
+  - Chain dropdown now only visible on Dashboard and Projects (ecosystem-specific pages)
+  - Pipeline and Guide are neutral — no global chain dropdown, no chain in footer
+  - Pipeline retains its own per-panel chain selectors for each operation
+
+**Pipeline now 10 steps:** dedup → expand-grid → grid → defillama → coingecko → website → promote → stale → notes → sources
+
