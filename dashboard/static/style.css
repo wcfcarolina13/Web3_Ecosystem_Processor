@@ -414,6 +414,8 @@ footer code {
 .link-cell a:hover { text-decoration: underline; }
 
 .bool-cell { text-align: center; }
+.bool-true { color: var(--success); font-size: 14px; font-weight: 700; }
+.bool-false { color: var(--text-muted); font-size: 12px; opacity: 0.4; }
 
 .evidence-cell {
     max-width: 200px;

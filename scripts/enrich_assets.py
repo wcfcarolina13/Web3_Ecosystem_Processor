@@ -309,11 +309,15 @@ def enrich_csv(
         updates = {}
 
         # Update stablecoin heuristic columns
-        if classification["has_any_stablecoin"]:
+        if classification["has_usdt"]:
             updates["Suspect USDT support?"] = "TRUE"
             updates["Web3 but no stablecoin"] = ""
-            if classification["has_usdt"] and classification["has_usdc"]:
+            if classification["has_usdc"]:
                 updates["General Stablecoin Adoption"] = "TRUE"
+        elif classification["has_usdc"]:
+            # USDC found but NOT USDT — do not flag as suspect USDT
+            updates["General Stablecoin Adoption"] = "TRUE"
+            updates["Web3 but no stablecoin"] = ""
         else:
             # Has a DeFi protocol but no stablecoins detected
             if not row.get("Suspect USDT support?"):
@@ -346,7 +350,7 @@ def enrich_csv(
         elif has_usdt:
             note_findings.append("Supports USDT")
         elif has_usdc:
-            note_findings.append("Supports USDC only (no USDT)")
+            note_findings.append("USDC support found, no evidence of USDT support")
 
         # Distinguish chain presence (from chains array) vs token holdings
         if has_sol:

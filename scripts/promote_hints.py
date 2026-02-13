@@ -158,8 +158,9 @@ def apply_strategy_general_stablecoin(row: Dict, scan: Dict) -> Tuple[Dict, str]
         "General Stablecoin Adoption": "TRUE",
         "Web3 but no stablecoin": "",
     }
-    source = "USDC" if scan["has_usdc"] else "stablecoin"
-    return updates, f"{source} → General Stablecoin"
+    if scan["has_usdc"]:
+        return updates, "USDC → General Stablecoin (no evidence of USDT)"
+    return updates, "stablecoin → General Stablecoin"
 
 
 def apply_strategy_web3(row: Dict, scan: Dict) -> Tuple[Dict, str]:
@@ -273,6 +274,12 @@ def promote_hints(
                 row.update(updates)
                 annotate_notes(row)
                 add_promote_marker(row)
+                # Add explicit USDC note when promoting USDC-without-USDT
+                if "General Stablecoin Adoption" in updates and scan["has_usdc"] and not scan["has_usdt"]:
+                    usdc_note = "USDC support found, no evidence of USDT support"
+                    current_notes = row.get("Notes", "")
+                    if usdc_note not in current_notes:
+                        row["Notes"] = f"{current_notes} | {usdc_note}" if current_notes else usdc_note
                 any_changes = True
         else:
             # No strategy fired (columns already set), but still mark as processed

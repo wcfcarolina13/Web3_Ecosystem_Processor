@@ -16,6 +16,19 @@ from lib.csv_utils import load_csv, find_main_csv
 PROJECT_ROOT = Path(__file__).parent.parent
 CONFIG_PATH = PROJECT_ROOT / "config" / "chains.json"
 
+# Boolean columns rendered as checkboxes in the Full view
+BOOLEAN_COLUMNS = {
+    "Suspect USDT support?",
+    "Skip",
+    "Added",
+    "Web3 but no stablecoin",
+    "General Stablecoin Adoption",
+    "To be Added",
+    "Processed?",
+    "In Admin",
+    "TG/TON appstore (no main URL)",
+}
+
 
 # ── Chain config ──────────────────────────────────────────────
 

@@ -19,6 +19,7 @@ from .data_service import (
     get_project_table_full,
     get_all_columns,
     get_filter_options,
+    BOOLEAN_COLUMNS,
 )
 
 bp = Blueprint("dashboard", __name__)
@@ -114,6 +115,7 @@ def table():
         show_chain_selector=True,
         view=view,
         all_columns=all_columns,
+        boolean_columns=BOOLEAN_COLUMNS,
     )
 
 

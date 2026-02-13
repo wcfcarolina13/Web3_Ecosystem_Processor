@@ -80,11 +80,11 @@
         <div class="view-toggle">
             <label>View:</label>
             {% if view == 'full' %}
-                <a href="/table?chain={{ chain }}&view=summary{% if filters.search %}&search={{ filters.search }}{% endif %}{% if filters.category %}&category={{ filters.category }}{% endif %}{% if filters.source %}&source={{ filters.source }}{% endif %}{% if filters.grid_matched %}&grid_matched={{ filters.grid_matched }}{% endif %}{% if filters.has_evidence %}&has_evidence={{ filters.has_evidence }}{% endif %}{% if filters.website_health %}&website_health={{ filters.website_health }}{% endif %}" class="btn btn-sm">Summary</a>
-                <span class="btn btn-sm btn-active">Full</span>
+                <a href="/table?chain={{ chain }}&view=summary{% if filters.search %}&search={{ filters.search }}{% endif %}{% if filters.category %}&category={{ filters.category }}{% endif %}{% if filters.source %}&source={{ filters.source }}{% endif %}{% if filters.grid_matched %}&grid_matched={{ filters.grid_matched }}{% endif %}{% if filters.has_evidence %}&has_evidence={{ filters.has_evidence }}{% endif %}{% if filters.website_health %}&website_health={{ filters.website_health }}{% endif %}" class="btn btn-sm btn-secondary" title="Switch to key research columns">Summary</a>
+                <span class="btn btn-sm btn-active" title="Showing all CSV columns">Full</span>
             {% else %}
-                <span class="btn btn-sm btn-active">Summary</span>
-                <a href="/table?chain={{ chain }}&view=full{% if filters.search %}&search={{ filters.search }}{% endif %}{% if filters.category %}&category={{ filters.category }}{% endif %}{% if filters.source %}&source={{ filters.source }}{% endif %}{% if filters.grid_matched %}&grid_matched={{ filters.grid_matched }}{% endif %}{% if filters.has_evidence %}&has_evidence={{ filters.has_evidence }}{% endif %}{% if filters.website_health %}&website_health={{ filters.website_health }}{% endif %}" class="btn btn-sm">Full</a>
+                <span class="btn btn-sm btn-active" title="Showing key research columns">Summary</span>
+                <a href="/table?chain={{ chain }}&view=full{% if filters.search %}&search={{ filters.search }}{% endif %}{% if filters.category %}&category={{ filters.category }}{% endif %}{% if filters.source %}&source={{ filters.source }}{% endif %}{% if filters.grid_matched %}&grid_matched={{ filters.grid_matched }}{% endif %}{% if filters.has_evidence %}&has_evidence={{ filters.has_evidence }}{% endif %}{% if filters.website_health %}&website_health={{ filters.website_health }}{% endif %}" class="btn btn-sm btn-secondary" title="Switch to all CSV columns">Full</a>
             {% endif %}
         </div>
     </div>
@@ -118,6 +118,14 @@
                 <td class="notes-cell" title="{{ val }}">{{ val | truncate(80) }}</td>
                 {% elif col == 'Project Name' %}
                 <td class="name-cell sticky-col"><strong>{{ val }}</strong></td>
+                {% elif col in boolean_columns %}
+                <td class="bool-cell">
+                    {% if val.strip().upper() in ('TRUE', 'YES', '1') %}
+                    <span class="bool-true" title="TRUE">&#10003;</span>
+                    {% elif val.strip().upper() in ('FALSE', 'NO', '0') %}
+                    <span class="bool-false" title="FALSE">&mdash;</span>
+                    {% endif %}
+                </td>
                 {% else %}
                 <td title="{{ val }}">{{ val | truncate(40) }}</td>
                 {% endif %}
