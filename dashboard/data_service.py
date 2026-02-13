@@ -50,7 +50,7 @@ def load_chain_data(chain: str) -> List[Dict]:
     csv_path = find_main_csv(chain)
     if not csv_path or not csv_path.exists():
         return []
-    return load_csv(csv_path)
+    return load_csv(csv_path, validate=False)
 
 
 def get_csv_path(chain: str) -> Optional[Path]:
