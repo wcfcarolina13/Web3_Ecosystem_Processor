@@ -1,0 +1,1933 @@
+{
+  "fetched_at": "2026-02-13T23:10:18.854327+00:00",
+  "source": "CoinGecko /coins/markets?category=stablecoins",
+  "count": 220,
+  "min_market_cap_usd": 1000000,
+  "stablecoins": [
+    {
+      "symbol": "USDS",
+      "name": "USDS",
+      "market_cap": 9665464928,
+      "keywords": [
+        "usds"
+      ]
+    },
+    {
+      "symbol": "USDE",
+      "name": "Ethena USDe",
+      "market_cap": 6311134848,
+      "keywords": [
+        "usde",
+        "ethena usde"
+      ]
+    },
+    {
+      "symbol": "USD1",
+      "name": "USD1",
+      "market_cap": 5294191261,
+      "keywords": [
+        "usd1"
+      ]
+    },
+    {
+      "symbol": "DAI",
+      "name": "Dai",
+      "market_cap": 4159362107,
+      "keywords": [
+        "dai"
+      ]
+    },
+    {
+      "symbol": "PYUSD",
+      "name": "PayPal USD",
+      "market_cap": 3965562597,
+      "keywords": [
+        "pyusd",
+        "paypal usd"
+      ]
+    },
+    {
+      "symbol": "XAUT",
+      "name": "Tether Gold",
+      "market_cap": 2609641870,
+      "keywords": [
+        "xaut",
+        "tether gold"
+      ]
+    },
+    {
+      "symbol": "PAXG",
+      "name": "PAX Gold",
+      "market_cap": 2313976185,
+      "keywords": [
+        "paxg",
+        "pax gold"
+      ]
+    },
+    {
+      "symbol": "USDF",
+      "name": "Falcon USD",
+      "market_cap": 1751601143,
+      "keywords": [
+        "usdf",
+        "falcon usd"
+      ]
+    },
+    {
+      "symbol": "USDG",
+      "name": "Global Dollar",
+      "market_cap": 1571949027,
+      "keywords": [
+        "usdg",
+        "global dollar"
+      ]
+    },
+    {
+      "symbol": "RLUSD",
+      "name": "Ripple USD",
+      "market_cap": 1522057291,
+      "keywords": [
+        "rlusd",
+        "ripple usd"
+      ]
+    },
+    {
+      "symbol": "BFUSD",
+      "name": "BFUSD",
+      "market_cap": 1318735235,
+      "keywords": [
+        "bfusd"
+      ]
+    },
+    {
+      "symbol": "USDTB",
+      "name": "USDtb",
+      "market_cap": 834054732,
+      "keywords": [
+        "usdtb"
+      ]
+    },
+    {
+      "symbol": "USDD",
+      "name": "USDD",
+      "market_cap": 668652888,
+      "keywords": [
+        "usdd"
+      ]
+    },
+    {
+      "symbol": "USD0",
+      "name": "Usual USD",
+      "market_cap": 570897454,
+      "keywords": [
+        "usd0",
+        "usual usd"
+      ]
+    },
+    {
+      "symbol": "GHO",
+      "name": "GHO",
+      "market_cap": 527624081,
+      "keywords": [
+        "gho"
+      ]
+    },
+    {
+      "symbol": "A7A5",
+      "name": "A7A5",
+      "market_cap": 507848994,
+      "keywords": [
+        "a7a5"
+      ]
+    },
+    {
+      "symbol": "TUSD",
+      "name": "TrueUSD",
+      "market_cap": 493745761,
+      "keywords": [
+        "tusd",
+        "trueusd"
+      ]
+    },
+    {
+      "symbol": "EURC",
+      "name": "EURC",
+      "market_cap": 462608582,
+      "keywords": [
+        "eurc"
+      ]
+    },
+    {
+      "symbol": "KAU",
+      "name": "Kinesis Gold",
+      "market_cap": 420731382,
+      "keywords": [
+        "kau",
+        "kinesis gold"
+      ]
+    },
+    {
+      "symbol": "FDUSD",
+      "name": "First Digital USD",
+      "market_cap": 395053563,
+      "keywords": [
+        "fdusd",
+        "first digital usd"
+      ]
+    },
+    {
+      "symbol": "USX",
+      "name": "USX",
+      "market_cap": 314722195,
+      "keywords": [
+        "usx"
+      ]
+    },
+    {
+      "symbol": "BUSD",
+      "name": "Binance-Peg BUSD",
+      "market_cap": 290219974,
+      "keywords": [
+        "busd",
+        "binance-peg busd"
+      ]
+    },
+    {
+      "symbol": "CRVUSD",
+      "name": "crvUSD",
+      "market_cap": 288760699,
+      "keywords": [
+        "crvusd"
+      ]
+    },
+    {
+      "symbol": "KAG",
+      "name": "Kinesis Silver",
+      "market_cap": 281968180,
+      "keywords": [
+        "kag",
+        "kinesis silver"
+      ]
+    },
+    {
+      "symbol": "FRAX",
+      "name": "Legacy Frax Dollar",
+      "market_cap": 274000754,
+      "keywords": [
+        "frax",
+        "legacy frax dollar"
+      ]
+    },
+    {
+      "symbol": "NUSD",
+      "name": "Neutrl USD",
+      "market_cap": 228288020,
+      "keywords": [
+        "nusd",
+        "neutrl usd"
+      ]
+    },
+    {
+      "symbol": "YLDS",
+      "name": "YLDS",
+      "market_cap": 219237880,
+      "keywords": [
+        "ylds"
+      ]
+    },
+    {
+      "symbol": "USDA",
+      "name": "USDa",
+      "market_cap": 218058405,
+      "keywords": [
+        "usda"
+      ]
+    },
+    {
+      "symbol": "USR",
+      "name": "Resolv USR",
+      "market_cap": 217070775,
+      "keywords": [
+        "usr",
+        "resolv usr"
+      ]
+    },
+    {
+      "symbol": "AUSD",
+      "name": "AUSD",
+      "market_cap": 216260429,
+      "keywords": [
+        "ausd"
+      ]
+    },
+    {
+      "symbol": "USDC.N",
+      "name": "Noble USDC",
+      "market_cap": 196973816,
+      "keywords": [
+        "usdc.n",
+        "noble usdc"
+      ]
+    },
+    {
+      "symbol": "USDF",
+      "name": "Aster USDF",
+      "market_cap": 161868073,
+      "keywords": [
+        "usdf",
+        "aster usdf"
+      ]
+    },
+    {
+      "symbol": "SATUSD",
+      "name": "Satoshi Stablecoin",
+      "market_cap": 158492553,
+      "keywords": [
+        "satusd",
+        "satoshi stablecoin"
+      ]
+    },
+    {
+      "symbol": "EURS",
+      "name": "STASIS EURO",
+      "market_cap": 156841091,
+      "keywords": [
+        "eurs",
+        "stasis euro"
+      ]
+    },
+    {
+      "symbol": "CUSD",
+      "name": "Cap USD",
+      "market_cap": 150687661,
+      "keywords": [
+        "cusd",
+        "cap usd"
+      ]
+    },
+    {
+      "symbol": "GUSD",
+      "name": "GUSD",
+      "market_cap": 149680837,
+      "keywords": [
+        "gusd"
+      ]
+    },
+    {
+      "symbol": "DOLA",
+      "name": "DOLA",
+      "market_cap": 120365636,
+      "keywords": [
+        "dola"
+      ]
+    },
+    {
+      "symbol": "DUSD",
+      "name": "StandX DUSD",
+      "market_cap": 120064179,
+      "keywords": [
+        "dusd",
+        "standx dusd"
+      ]
+    },
+    {
+      "symbol": "PUSD",
+      "name": "Pleasing USD",
+      "market_cap": 119471476,
+      "keywords": [
+        "pusd",
+        "pleasing usd"
+      ]
+    },
+    {
+      "symbol": "AIDAUSDC",
+      "name": "Gaib AI Dollar Alpha USDC",
+      "market_cap": 114595062,
+      "keywords": [
+        "aidausdc",
+        "gaib ai dollar alpha usdc"
+      ]
+    },
+    {
+      "symbol": "FRXUSD",
+      "name": "Frax USD",
+      "market_cap": 111766119,
+      "keywords": [
+        "frxusd",
+        "frax usd"
+      ]
+    },
+    {
+      "symbol": "CASH",
+      "name": "CASH",
+      "market_cap": 105809985,
+      "keywords": [
+        "cash"
+      ]
+    },
+    {
+      "symbol": "AVUSD",
+      "name": "Avant USD",
+      "market_cap": 105738165,
+      "keywords": [
+        "avusd",
+        "avant usd"
+      ]
+    },
+    {
+      "symbol": "MNEE",
+      "name": "MNEE USD Stablecoin",
+      "market_cap": 105075335,
+      "keywords": [
+        "mnee",
+        "mnee usd stablecoin"
+      ]
+    },
+    {
+      "symbol": "USDZ",
+      "name": "Anzen USDz",
+      "market_cap": 102596153,
+      "keywords": [
+        "usdz",
+        "anzen usdz"
+      ]
+    },
+    {
+      "symbol": "USDR",
+      "name": "Ring USD",
+      "market_cap": 100328254,
+      "keywords": [
+        "usdr",
+        "ring usd"
+      ]
+    },
+    {
+      "symbol": "PGOLD",
+      "name": "Pleasing Gold",
+      "market_cap": 97476263,
+      "keywords": [
+        "pgold",
+        "pleasing gold"
+      ]
+    },
+    {
+      "symbol": "XDAI",
+      "name": "XDAI",
+      "market_cap": 94077889,
+      "keywords": [
+        "xdai"
+      ]
+    },
+    {
+      "symbol": "USDA",
+      "name": "USDA",
+      "market_cap": 91497418,
+      "keywords": [
+        "usda"
+      ]
+    },
+    {
+      "symbol": "JUSD",
+      "name": "JUSD",
+      "market_cap": 86244324,
+      "keywords": [
+        "jusd"
+      ]
+    },
+    {
+      "symbol": "EURCV",
+      "name": "EUR CoinVertible",
+      "market_cap": 77964115,
+      "keywords": [
+        "eurcv",
+        "eur coinvertible"
+      ]
+    },
+    {
+      "symbol": "SUSDA",
+      "name": "sUSDa",
+      "market_cap": 75927078,
+      "keywords": [
+        "susda"
+      ]
+    },
+    {
+      "symbol": "FEUSD",
+      "name": "Felix feUSD",
+      "market_cap": 74830919,
+      "keywords": [
+        "feusd",
+        "felix feusd"
+      ]
+    },
+    {
+      "symbol": "CGUSD",
+      "name": "Cygnus Finance Global USD",
+      "market_cap": 74710636,
+      "keywords": [
+        "cgusd",
+        "cygnus finance global usd"
+      ]
+    },
+    {
+      "symbol": "USDO",
+      "name": "OpenEden OpenDollar",
+      "market_cap": 73407001,
+      "keywords": [
+        "usdo",
+        "openeden opendollar"
+      ]
+    },
+    {
+      "symbol": "MIM",
+      "name": "Magic Internet Money (Arbitrum)",
+      "market_cap": 65261413,
+      "keywords": [
+        "mim",
+        "magic internet money (arbitrum)"
+      ]
+    },
+    {
+      "symbol": "JUPUSD",
+      "name": "JupUSD",
+      "market_cap": 64562850,
+      "keywords": [
+        "jupusd"
+      ]
+    },
+    {
+      "symbol": "FIDD",
+      "name": "Fidelity Digital Dollar",
+      "market_cap": 62566428,
+      "keywords": [
+        "fidd",
+        "fidelity digital dollar"
+      ]
+    },
+    {
+      "symbol": "YZUSD",
+      "name": "Yuzu USD",
+      "market_cap": 57497261,
+      "keywords": [
+        "yzusd",
+        "yuzu usd"
+      ]
+    },
+    {
+      "symbol": "AEUR",
+      "name": "Anchored Coins AEUR",
+      "market_cap": 57081560,
+      "keywords": [
+        "aeur",
+        "anchored coins aeur"
+      ]
+    },
+    {
+      "symbol": "EURI",
+      "name": "Eurite",
+      "market_cap": 55700340,
+      "keywords": [
+        "euri",
+        "eurite"
+      ]
+    },
+    {
+      "symbol": "MIM",
+      "name": "Magic Internet Money (Ethereum)",
+      "market_cap": 55132392,
+      "keywords": [
+        "mim",
+        "magic internet money (ethereum)"
+      ]
+    },
+    {
+      "symbol": "DAI",
+      "name": "DAI on PulseChain",
+      "market_cap": 55000499,
+      "keywords": [
+        "dai",
+        "dai on pulsechain"
+      ]
+    },
+    {
+      "symbol": "USDX",
+      "name": "USDX",
+      "market_cap": 51867336,
+      "keywords": [
+        "usdx"
+      ]
+    },
+    {
+      "symbol": "XUSD",
+      "name": "StraitsX XUSD",
+      "market_cap": 51393801,
+      "keywords": [
+        "xusd",
+        "straitsx xusd"
+      ]
+    },
+    {
+      "symbol": "USDKG",
+      "name": "USDKG",
+      "market_cap": 50007463,
+      "keywords": [
+        "usdkg"
+      ]
+    },
+    {
+      "symbol": "AUSDT",
+      "name": "Alloy Tether",
+      "market_cap": 49941172,
+      "keywords": [
+        "ausdt",
+        "alloy tether"
+      ]
+    },
+    {
+      "symbol": "USD+",
+      "name": "Overnight.fi USD+",
+      "market_cap": 48007018,
+      "keywords": [
+        "usd+",
+        "overnight.fi usd+"
+      ]
+    },
+    {
+      "symbol": "USDP",
+      "name": "Pax Dollar",
+      "market_cap": 47555373,
+      "keywords": [
+        "usdp",
+        "pax dollar"
+      ]
+    },
+    {
+      "symbol": "GUSD",
+      "name": "Gemini Dollar",
+      "market_cap": 45339704,
+      "keywords": [
+        "gusd",
+        "gemini dollar"
+      ]
+    },
+    {
+      "symbol": "BUSD",
+      "name": "BUSD",
+      "market_cap": 40005295,
+      "keywords": [
+        "busd"
+      ]
+    },
+    {
+      "symbol": "YUSD",
+      "name": "Aegis YUSD",
+      "market_cap": 39092922,
+      "keywords": [
+        "yusd",
+        "aegis yusd"
+      ]
+    },
+    {
+      "symbol": "REUSD",
+      "name": "Resupply USD",
+      "market_cap": 38358561,
+      "keywords": [
+        "reusd",
+        "resupply usd"
+      ]
+    },
+    {
+      "symbol": "LISUSD",
+      "name": "Lista USD",
+      "market_cap": 37532635,
+      "keywords": [
+        "lisusd",
+        "lista usd"
+      ]
+    },
+    {
+      "symbol": "ZCHF",
+      "name": "Frankencoin",
+      "market_cap": 34571911,
+      "keywords": [
+        "zchf",
+        "frankencoin"
+      ]
+    },
+    {
+      "symbol": "XTUSD",
+      "name": "XT Stablecoin XTUSD",
+      "market_cap": 32793702,
+      "keywords": [
+        "xtusd",
+        "xt stablecoin xtusd"
+      ]
+    },
+    {
+      "symbol": "HBD",
+      "name": "Hive Dollar",
+      "market_cap": 32088406,
+      "keywords": [
+        "hbd",
+        "hive dollar"
+      ]
+    },
+    {
+      "symbol": "BOLD",
+      "name": "BOLD",
+      "market_cap": 31530882,
+      "keywords": [
+        "bold"
+      ]
+    },
+    {
+      "symbol": "USN",
+      "name": "Noon USN",
+      "market_cap": 31340268,
+      "keywords": [
+        "usn",
+        "noon usn"
+      ]
+    },
+    {
+      "symbol": "LUSD",
+      "name": "Liquity USD",
+      "market_cap": 31066261,
+      "keywords": [
+        "lusd",
+        "liquity usd"
+      ]
+    },
+    {
+      "symbol": "MIMATIC",
+      "name": "MAI",
+      "market_cap": 27592509,
+      "keywords": [
+        "mimatic"
+      ]
+    },
+    {
+      "symbol": "USTC",
+      "name": "TerraClassicUSD",
+      "market_cap": 27023284,
+      "keywords": [
+        "ustc",
+        "terraclassicusd"
+      ]
+    },
+    {
+      "symbol": "EURE",
+      "name": "Monerium EUR emoney",
+      "market_cap": 27017696,
+      "keywords": [
+        "eure",
+        "monerium eur emoney"
+      ]
+    },
+    {
+      "symbol": "USDCV",
+      "name": "USD CoinVertible",
+      "market_cap": 26969068,
+      "keywords": [
+        "usdcv",
+        "usd coinvertible"
+      ]
+    },
+    {
+      "symbol": "SUSD",
+      "name": "Synthetix sUSD",
+      "market_cap": 26649680,
+      "keywords": [
+        "susd",
+        "synthetix susd"
+      ]
+    },
+    {
+      "symbol": "USDN",
+      "name": "Noble Dollar (USDN)",
+      "market_cap": 26171479,
+      "keywords": [
+        "usdn",
+        "noble dollar (usdn)"
+      ]
+    },
+    {
+      "symbol": "BUCK",
+      "name": "Bucket Protocol BUCK Stablecoin",
+      "market_cap": 26019619,
+      "keywords": [
+        "buck",
+        "bucket protocol buck stablecoin"
+      ]
+    },
+    {
+      "symbol": "EURE",
+      "name": "Monerium EUR emoney [OLD]",
+      "market_cap": 25158078,
+      "keywords": [
+        "eure",
+        "monerium eur emoney [old]"
+      ]
+    },
+    {
+      "symbol": "USDB",
+      "name": "USDB",
+      "market_cap": 24780593,
+      "keywords": [
+        "usdb"
+      ]
+    },
+    {
+      "symbol": "EUSD",
+      "name": "Electronic USD",
+      "market_cap": 24636042,
+      "keywords": [
+        "eusd",
+        "electronic usd"
+      ]
+    },
+    {
+      "symbol": "GTUSDTB",
+      "name": "Gauntlet USDT Balanced",
+      "market_cap": 24249413,
+      "keywords": [
+        "gtusdtb",
+        "gauntlet usdt balanced"
+      ]
+    },
+    {
+      "symbol": "HONEY",
+      "name": "Honey",
+      "market_cap": 24119488,
+      "keywords": [
+        "honey"
+      ]
+    },
+    {
+      "symbol": "GYD",
+      "name": "Gyroscope GYD",
+      "market_cap": 24026505,
+      "keywords": [
+        "gyd",
+        "gyroscope gyd"
+      ]
+    },
+    {
+      "symbol": "MUSD",
+      "name": "MetaMask USD",
+      "market_cap": 21588700,
+      "keywords": [
+        "musd",
+        "metamask usd"
+      ]
+    },
+    {
+      "symbol": "USDH",
+      "name": "USDH",
+      "market_cap": 21348215,
+      "keywords": [
+        "usdh"
+      ]
+    },
+    {
+      "symbol": "UTY",
+      "name": "Unity",
+      "market_cap": 20978412,
+      "keywords": [
+        "uty"
+      ]
+    },
+    {
+      "symbol": "MSUSD",
+      "name": "Metronome Synth USD",
+      "market_cap": 20368148,
+      "keywords": [
+        "msusd",
+        "metronome synth usd"
+      ]
+    },
+    {
+      "symbol": "MUSD",
+      "name": "Mezo USD",
+      "market_cap": 19240851,
+      "keywords": [
+        "musd",
+        "mezo usd"
+      ]
+    },
+    {
+      "symbol": "NXUSD",
+      "name": "NXUSD",
+      "market_cap": 18948015,
+      "keywords": [
+        "nxusd"
+      ]
+    },
+    {
+      "symbol": "JPYC",
+      "name": "JPY Coin",
+      "market_cap": 18487414,
+      "keywords": [
+        "jpyc",
+        "jpy coin"
+      ]
+    },
+    {
+      "symbol": "HYUSD",
+      "name": "Hylo USD",
+      "market_cap": 17748903,
+      "keywords": [
+        "hyusd",
+        "hylo usd"
+      ]
+    },
+    {
+      "symbol": "MIM",
+      "name": "Magic Internet Money (Optimism)",
+      "market_cap": 17603696,
+      "keywords": [
+        "mim",
+        "magic internet money (optimism)"
+      ]
+    },
+    {
+      "symbol": "JPYC",
+      "name": "JPY Coin v1",
+      "market_cap": 17172581,
+      "keywords": [
+        "jpyc",
+        "jpy coin v1"
+      ]
+    },
+    {
+      "symbol": "USDM",
+      "name": "Mento Dollar",
+      "market_cap": 14950358,
+      "keywords": [
+        "usdm",
+        "mento dollar"
+      ]
+    },
+    {
+      "symbol": "FXUSD",
+      "name": "f(x) Protocol fxUSD",
+      "market_cap": 14590441,
+      "keywords": [
+        "fxusd",
+        "f(x) protocol fxusd"
+      ]
+    },
+    {
+      "symbol": "WEMIX$",
+      "name": "WEMIX Dollar",
+      "market_cap": 14417894,
+      "keywords": [
+        "wemix$",
+        "wemix dollar"
+      ]
+    },
+    {
+      "symbol": "XSGD",
+      "name": "XSGD",
+      "market_cap": 14016414,
+      "keywords": [
+        "xsgd"
+      ]
+    },
+    {
+      "symbol": "MSUSD",
+      "name": "Main Street USD",
+      "market_cap": 13980804,
+      "keywords": [
+        "msusd",
+        "main street usd"
+      ]
+    },
+    {
+      "symbol": "ALUSD",
+      "name": "Alchemix USD",
+      "market_cap": 13588871,
+      "keywords": [
+        "alusd",
+        "alchemix usd"
+      ]
+    },
+    {
+      "symbol": "EURR",
+      "name": "StablR Euro",
+      "market_cap": 13518894,
+      "keywords": [
+        "eurr",
+        "stablr euro"
+      ]
+    },
+    {
+      "symbol": "SYUSD",
+      "name": "Staked YUSD",
+      "market_cap": 13141027,
+      "keywords": [
+        "syusd",
+        "staked yusd"
+      ]
+    },
+    {
+      "symbol": "USDM",
+      "name": "USDM",
+      "market_cap": 13077630,
+      "keywords": [
+        "usdm"
+      ]
+    },
+    {
+      "symbol": "SUIUSDE",
+      "name": "eSui Dollar",
+      "market_cap": 12758505,
+      "keywords": [
+        "suiusde",
+        "esui dollar"
+      ]
+    },
+    {
+      "symbol": "VCRED",
+      "name": "VCRED",
+      "market_cap": 12548588,
+      "keywords": [
+        "vcred"
+      ]
+    },
+    {
+      "symbol": "HOLLAR",
+      "name": "Hydrated Dollar",
+      "market_cap": 12531863,
+      "keywords": [
+        "hollar",
+        "hydrated dollar"
+      ]
+    },
+    {
+      "symbol": "JPYC",
+      "name": "JPY Coin",
+      "market_cap": 11834226,
+      "keywords": [
+        "jpyc",
+        "jpy coin"
+      ]
+    },
+    {
+      "symbol": "YUSD",
+      "name": "YUSD Stablecoin",
+      "market_cap": 11794282,
+      "keywords": [
+        "yusd",
+        "yusd stablecoin"
+      ]
+    },
+    {
+      "symbol": "MSY",
+      "name": "Main Street Yield",
+      "market_cap": 11369434,
+      "keywords": [
+        "msy",
+        "main street yield"
+      ]
+    },
+    {
+      "symbol": "INALPHA",
+      "name": "Nest Alpha Vault (LP)",
+      "market_cap": 11086392,
+      "keywords": [
+        "inalpha",
+        "nest alpha vault (lp)"
+      ]
+    },
+    {
+      "symbol": "UUSD",
+      "name": "Youves uUSD",
+      "market_cap": 10914499,
+      "keywords": [
+        "uusd",
+        "youves uusd"
+      ]
+    },
+    {
+      "symbol": "IDRT",
+      "name": "Rupiah Token",
+      "market_cap": 10524596,
+      "keywords": [
+        "idrt",
+        "rupiah token"
+      ]
+    },
+    {
+      "symbol": "USDZ",
+      "name": "Zedxion USDZ",
+      "market_cap": 10473526,
+      "keywords": [
+        "usdz",
+        "zedxion usdz"
+      ]
+    },
+    {
+      "symbol": "AZND",
+      "name": "Mu Digital AZND",
+      "market_cap": 10359428,
+      "keywords": [
+        "aznd",
+        "mu digital aznd"
+      ]
+    },
+    {
+      "symbol": "IUSD",
+      "name": "Indigo Protocol iUSD",
+      "market_cap": 10108453,
+      "keywords": [
+        "iusd",
+        "indigo protocol iusd"
+      ]
+    },
+    {
+      "symbol": "WUSD",
+      "name": "Worldwide USD",
+      "market_cap": 10055674,
+      "keywords": [
+        "wusd",
+        "worldwide usd"
+      ]
+    },
+    {
+      "symbol": "USDA",
+      "name": "Anzens USDA",
+      "market_cap": 10023928,
+      "keywords": [
+        "usda",
+        "anzens usda"
+      ]
+    },
+    {
+      "symbol": "EUSD",
+      "name": "eUSD",
+      "market_cap": 10000263,
+      "keywords": [
+        "eusd"
+      ]
+    },
+    {
+      "symbol": "MONEY",
+      "name": "Defi.money",
+      "market_cap": 9963177,
+      "keywords": [
+        "money",
+        "defi.money"
+      ]
+    },
+    {
+      "symbol": "USX",
+      "name": "dForce USD",
+      "market_cap": 9685402,
+      "keywords": [
+        "usx",
+        "dforce usd"
+      ]
+    },
+    {
+      "symbol": "CRVFRAX",
+      "name": "Curve.fi FRAX/USDC",
+      "market_cap": 9678361,
+      "keywords": [
+        "crvfrax",
+        "curve.fi frax/usdc"
+      ]
+    },
+    {
+      "symbol": "PMUSD",
+      "name": "Precious Metals USD",
+      "market_cap": 9641746,
+      "keywords": [
+        "pmusd",
+        "precious metals usd"
+      ]
+    },
+    {
+      "symbol": "USD+",
+      "name": "Overnight.fi USD+ (Blast)",
+      "market_cap": 9197187,
+      "keywords": [
+        "usd+",
+        "overnight.fi usd+ (blast)"
+      ]
+    },
+    {
+      "symbol": "PUSD",
+      "name": "Plume USD",
+      "market_cap": 9016136,
+      "keywords": [
+        "pusd",
+        "plume usd"
+      ]
+    },
+    {
+      "symbol": "FUSD",
+      "name": "Freedom Dollar",
+      "market_cap": 8795198,
+      "keywords": [
+        "fusd",
+        "freedom dollar"
+      ]
+    },
+    {
+      "symbol": "SBC",
+      "name": "Stable Coin",
+      "market_cap": 8771864,
+      "keywords": [
+        "sbc",
+        "stable coin"
+      ]
+    },
+    {
+      "symbol": "BTCUSD",
+      "name": "Bitcoin USD (BTCFi)",
+      "market_cap": 8581066,
+      "keywords": [
+        "btcusd",
+        "bitcoin usd (btcfi)"
+      ]
+    },
+    {
+      "symbol": "OUSD",
+      "name": "Origin Dollar",
+      "market_cap": 8423253,
+      "keywords": [
+        "ousd",
+        "origin dollar"
+      ]
+    },
+    {
+      "symbol": "PLUSD",
+      "name": "Trevee Plasma USD",
+      "market_cap": 8414178,
+      "keywords": [
+        "plusd",
+        "trevee plasma usd"
+      ]
+    },
+    {
+      "symbol": "USDX",
+      "name": "Stables Labs USDX",
+      "market_cap": 7679419,
+      "keywords": [
+        "usdx",
+        "stables labs usdx"
+      ]
+    },
+    {
+      "symbol": "LUAUSD",
+      "name": "Lumi Finance LUAUSD",
+      "market_cap": 7665813,
+      "keywords": [
+        "luausd",
+        "lumi finance luausd"
+      ]
+    },
+    {
+      "symbol": "USD+",
+      "name": "Overnight.fi USD+ (Base)",
+      "market_cap": 7624989,
+      "keywords": [
+        "usd+",
+        "overnight.fi usd+ (base)"
+      ]
+    },
+    {
+      "symbol": "USD3",
+      "name": "Web 3 Dollar",
+      "market_cap": 7403746,
+      "keywords": [
+        "usd3",
+        "web 3 dollar"
+      ]
+    },
+    {
+      "symbol": "TRYB",
+      "name": "BiLira",
+      "market_cap": 6924372,
+      "keywords": [
+        "tryb",
+        "bilira"
+      ]
+    },
+    {
+      "symbol": "KGST",
+      "name": "Kyrgyz Som Stablecoin",
+      "market_cap": 6263787,
+      "keywords": [
+        "kgst",
+        "kyrgyz som stablecoin"
+      ]
+    },
+    {
+      "symbol": "CDXUSD",
+      "name": "Cod3x USD",
+      "market_cap": 6186258,
+      "keywords": [
+        "cdxusd",
+        "cod3x usd"
+      ]
+    },
+    {
+      "symbol": "USDQ",
+      "name": "Quantoz USDQ",
+      "market_cap": 6158669,
+      "keywords": [
+        "usdq",
+        "quantoz usdq"
+      ]
+    },
+    {
+      "symbol": "BNUSD",
+      "name": "Balanced Dollars",
+      "market_cap": 5951569,
+      "keywords": [
+        "bnusd",
+        "balanced dollars"
+      ]
+    },
+    {
+      "symbol": "EUROP",
+      "name": "EUR\u00d8P",
+      "market_cap": 5890377,
+      "keywords": [
+        "europ"
+      ]
+    },
+    {
+      "symbol": "GYEN",
+      "name": "GYEN",
+      "market_cap": 5757272,
+      "keywords": [
+        "gyen"
+      ]
+    },
+    {
+      "symbol": "EURQ",
+      "name": "Quantoz EURQ",
+      "market_cap": 5608195,
+      "keywords": [
+        "eurq",
+        "quantoz eurq"
+      ]
+    },
+    {
+      "symbol": "MIM",
+      "name": "Magic Internet Money (Avalanche)",
+      "market_cap": 5604630,
+      "keywords": [
+        "mim",
+        "magic internet money (avalanche)"
+      ]
+    },
+    {
+      "symbol": "USDR",
+      "name": "StablR USD",
+      "market_cap": 5536733,
+      "keywords": [
+        "usdr",
+        "stablr usd"
+      ]
+    },
+    {
+      "symbol": "AXCNH",
+      "name": "AxCNH",
+      "market_cap": 5529345,
+      "keywords": [
+        "axcnh"
+      ]
+    },
+    {
+      "symbol": "VCHF",
+      "name": "VNX Swiss Franc",
+      "market_cap": 5302572,
+      "keywords": [
+        "vchf",
+        "vnx swiss franc"
+      ]
+    },
+    {
+      "symbol": "HUSD",
+      "name": "HUSD",
+      "market_cap": 5195353,
+      "keywords": [
+        "husd"
+      ]
+    },
+    {
+      "symbol": "SPUSD",
+      "name": "SoulPeg USD",
+      "market_cap": 5183326,
+      "keywords": [
+        "spusd",
+        "soulpeg usd"
+      ]
+    },
+    {
+      "symbol": "USDH",
+      "name": "Hermetica USDh",
+      "market_cap": 5001082,
+      "keywords": [
+        "usdh",
+        "hermetica usdh"
+      ]
+    },
+    {
+      "symbol": "BRLA",
+      "name": "BRLA Digital BRLA",
+      "market_cap": 4949503,
+      "keywords": [
+        "brla",
+        "brla digital brla"
+      ]
+    },
+    {
+      "symbol": "TGBP",
+      "name": "Tokenised GBP",
+      "market_cap": 4852254,
+      "keywords": [
+        "tgbp",
+        "tokenised gbp"
+      ]
+    },
+    {
+      "symbol": "DOC",
+      "name": "Dollar On Chain",
+      "market_cap": 4799516,
+      "keywords": [
+        "doc",
+        "dollar on chain"
+      ]
+    },
+    {
+      "symbol": "AUDD",
+      "name": "Australian Digital Dollar",
+      "market_cap": 4776195,
+      "keywords": [
+        "audd",
+        "australian digital dollar"
+      ]
+    },
+    {
+      "symbol": "USX",
+      "name": "USX",
+      "market_cap": 4723443,
+      "keywords": [
+        "usx"
+      ]
+    },
+    {
+      "symbol": "NECT",
+      "name": "Nectar",
+      "market_cap": 4721166,
+      "keywords": [
+        "nect",
+        "nectar"
+      ]
+    },
+    {
+      "symbol": "EURA",
+      "name": "EURA",
+      "market_cap": 4697672,
+      "keywords": [
+        "eura"
+      ]
+    },
+    {
+      "symbol": "ZARP",
+      "name": "ZARP Stablecoin",
+      "market_cap": 4216777,
+      "keywords": [
+        "zarp",
+        "zarp stablecoin"
+      ]
+    },
+    {
+      "symbol": "DJED",
+      "name": "Djed",
+      "market_cap": 3988569,
+      "keywords": [
+        "djed"
+      ]
+    },
+    {
+      "symbol": "PHT",
+      "name": "PHT Stablecoin",
+      "market_cap": 3865868,
+      "keywords": [
+        "pht",
+        "pht stablecoin"
+      ]
+    },
+    {
+      "symbol": "USP",
+      "name": "Pareto USP",
+      "market_cap": 3763333,
+      "keywords": [
+        "usp",
+        "pareto usp"
+      ]
+    },
+    {
+      "symbol": "EURM",
+      "name": "Mento Euro",
+      "market_cap": 3728051,
+      "keywords": [
+        "eurm",
+        "mento euro"
+      ]
+    },
+    {
+      "symbol": "CDP",
+      "name": "Enosys Loans CDP",
+      "market_cap": 3649387,
+      "keywords": [
+        "cdp",
+        "enosys loans cdp"
+      ]
+    },
+    {
+      "symbol": "SUSD",
+      "name": "Staked USD Coin",
+      "market_cap": 3645260,
+      "keywords": [
+        "susd",
+        "staked usd coin"
+      ]
+    },
+    {
+      "symbol": "USDL",
+      "name": "Liquid Loans USDL",
+      "market_cap": 3443084,
+      "keywords": [
+        "usdl",
+        "liquid loans usdl"
+      ]
+    },
+    {
+      "symbol": "DLLR",
+      "name": "Sovryn Dollar",
+      "market_cap": 3442689,
+      "keywords": [
+        "dllr",
+        "sovryn dollar"
+      ]
+    },
+    {
+      "symbol": "FEI",
+      "name": "Fei USD",
+      "market_cap": 3428357,
+      "keywords": [
+        "fei",
+        "fei usd"
+      ]
+    },
+    {
+      "symbol": "VEUR",
+      "name": "VNX EURO",
+      "market_cap": 3282300,
+      "keywords": [
+        "veur",
+        "vnx euro"
+      ]
+    },
+    {
+      "symbol": "USDSC",
+      "name": "Startale USD",
+      "market_cap": 3240220,
+      "keywords": [
+        "usdsc",
+        "startale usd"
+      ]
+    },
+    {
+      "symbol": "USDXL",
+      "name": "Last USD",
+      "market_cap": 3161440,
+      "keywords": [
+        "usdxl",
+        "last usd"
+      ]
+    },
+    {
+      "symbol": "MUST",
+      "name": "Mustang",
+      "market_cap": 3155925,
+      "keywords": [
+        "must",
+        "mustang"
+      ]
+    },
+    {
+      "symbol": "USDV",
+      "name": "Solomon USDv",
+      "market_cap": 3012909,
+      "keywords": [
+        "usdv",
+        "solomon usdv"
+      ]
+    },
+    {
+      "symbol": "SRUSD",
+      "name": "Reservoir srUSD",
+      "market_cap": 2919034,
+      "keywords": [
+        "srusd",
+        "reservoir srusd"
+      ]
+    },
+    {
+      "symbol": "MUSD",
+      "name": "mStable USD",
+      "market_cap": 2881164,
+      "keywords": [
+        "musd",
+        "mstable usd"
+      ]
+    },
+    {
+      "symbol": "PAR",
+      "name": "Parallel",
+      "market_cap": 2835068,
+      "keywords": [
+        "par",
+        "parallel"
+      ]
+    },
+    {
+      "symbol": "AUDX",
+      "name": "Aussie Dollar Token",
+      "market_cap": 2627560,
+      "keywords": [
+        "audx",
+        "aussie dollar token"
+      ]
+    },
+    {
+      "symbol": "SSUPERUSD",
+      "name": "SuperReturn sSuperUSD",
+      "market_cap": 2426300,
+      "keywords": [
+        "ssuperusd",
+        "superreturn ssuperusd"
+      ]
+    },
+    {
+      "symbol": "VAI",
+      "name": "Vai",
+      "market_cap": 2272107,
+      "keywords": [
+        "vai"
+      ]
+    },
+    {
+      "symbol": "AUDM",
+      "name": "Macropod",
+      "market_cap": 2194182,
+      "keywords": [
+        "audm",
+        "macropod"
+      ]
+    },
+    {
+      "symbol": "MUSD",
+      "name": "Meta USD",
+      "market_cap": 2188319,
+      "keywords": [
+        "musd",
+        "meta usd"
+      ]
+    },
+    {
+      "symbol": "USC",
+      "name": "Orby Network USC Stablecoin",
+      "market_cap": 2105738,
+      "keywords": [
+        "usc",
+        "orby network usc stablecoin"
+      ]
+    },
+    {
+      "symbol": "RAI",
+      "name": "Rai Reflex Index",
+      "market_cap": 2007466,
+      "keywords": [
+        "rai",
+        "rai reflex index"
+      ]
+    },
+    {
+      "symbol": "USDBR",
+      "name": "USDbr",
+      "market_cap": 1995314,
+      "keywords": [
+        "usdbr"
+      ]
+    },
+    {
+      "symbol": "DUSD",
+      "name": "dTRINITY USD",
+      "market_cap": 1940581,
+      "keywords": [
+        "dusd",
+        "dtrinity usd"
+      ]
+    },
+    {
+      "symbol": "USDGLO",
+      "name": "Glo Dollar",
+      "market_cap": 1938951,
+      "keywords": [
+        "usdglo",
+        "glo dollar"
+      ]
+    },
+    {
+      "symbol": "DEURO",
+      "name": "Decentralized Euro",
+      "market_cap": 1938382,
+      "keywords": [
+        "deuro",
+        "decentralized euro"
+      ]
+    },
+    {
+      "symbol": "VUSD",
+      "name": "Virtue USD",
+      "market_cap": 1794073,
+      "keywords": [
+        "vusd",
+        "virtue usd"
+      ]
+    },
+    {
+      "symbol": "USDA",
+      "name": "USDA",
+      "market_cap": 1710415,
+      "keywords": [
+        "usda"
+      ]
+    },
+    {
+      "symbol": "BRZ",
+      "name": "Brazilian Digital",
+      "market_cap": 1692774,
+      "keywords": [
+        "brz",
+        "brazilian digital"
+      ]
+    },
+    {
+      "symbol": "CNGN",
+      "name": "Compliant Naira",
+      "market_cap": 1675116,
+      "keywords": [
+        "cngn",
+        "compliant naira"
+      ]
+    },
+    {
+      "symbol": "SILK",
+      "name": "Silk",
+      "market_cap": 1632610,
+      "keywords": [
+        "silk"
+      ]
+    },
+    {
+      "symbol": "FUSD",
+      "name": "The Fedz FUSD",
+      "market_cap": 1590139,
+      "keywords": [
+        "fusd",
+        "the fedz fusd"
+      ]
+    },
+    {
+      "symbol": "USDP",
+      "name": "Parallel USDp",
+      "market_cap": 1589734,
+      "keywords": [
+        "usdp",
+        "parallel usdp"
+      ]
+    },
+    {
+      "symbol": "USDN",
+      "name": "SMARDEX USDN",
+      "market_cap": 1558106,
+      "keywords": [
+        "usdn",
+        "smardex usdn"
+      ]
+    },
+    {
+      "symbol": "USD+",
+      "name": "USD+",
+      "market_cap": 1530776,
+      "keywords": [
+        "usd+"
+      ]
+    },
+    {
+      "symbol": "MXNB",
+      "name": "MXNB",
+      "market_cap": 1406377,
+      "keywords": [
+        "mxnb"
+      ]
+    },
+    {
+      "symbol": "IST",
+      "name": "Inter Stable Token",
+      "market_cap": 1398535,
+      "keywords": [
+        "ist",
+        "inter stable token"
+      ]
+    },
+    {
+      "symbol": "XUSD",
+      "name": "xUSD",
+      "market_cap": 1365595,
+      "keywords": [
+        "xusd"
+      ]
+    },
+    {
+      "symbol": "GGUSD",
+      "name": "Good Game US Dollar",
+      "market_cap": 1341813,
+      "keywords": [
+        "ggusd",
+        "good game us dollar"
+      ]
+    },
+    {
+      "symbol": "FXD",
+      "name": "Fathom Dollar",
+      "market_cap": 1329786,
+      "keywords": [
+        "fxd",
+        "fathom dollar"
+      ]
+    },
+    {
+      "symbol": "KRWQ",
+      "name": "KRWQ",
+      "market_cap": 1327819,
+      "keywords": [
+        "krwq"
+      ]
+    },
+    {
+      "symbol": "BRL1",
+      "name": "BRL1",
+      "market_cap": 1314263,
+      "keywords": [
+        "brl1"
+      ]
+    },
+    {
+      "symbol": "USDRIF",
+      "name": "RIF US Dollar",
+      "market_cap": 1260485,
+      "keywords": [
+        "usdrif",
+        "rif us dollar"
+      ]
+    },
+    {
+      "symbol": "PINTO",
+      "name": "Pinto",
+      "market_cap": 1182099,
+      "keywords": [
+        "pinto"
+      ]
+    },
+    {
+      "symbol": "EURAU",
+      "name": "AllUnity EUR",
+      "market_cap": 1170247,
+      "keywords": [
+        "eurau",
+        "allunity eur"
+      ]
+    },
+    {
+      "symbol": "USDS",
+      "name": "Sperax USD",
+      "market_cap": 1121171,
+      "keywords": [
+        "usds",
+        "sperax usd"
+      ]
+    },
+    {
+      "symbol": "CJPY",
+      "name": "Convertible JPY Token",
+      "market_cap": 1120405,
+      "keywords": [
+        "cjpy",
+        "convertible jpy token"
+      ]
+    },
+    {
+      "symbol": "IDRX",
+      "name": "IDRX",
+      "market_cap": 1098775,
+      "keywords": [
+        "idrx"
+      ]
+    },
+    {
+      "symbol": "MYRC",
+      "name": "Blox MYRC",
+      "market_cap": 1094409,
+      "keywords": [
+        "myrc",
+        "blox myrc"
+      ]
+    },
+    {
+      "symbol": "GLDT",
+      "name": "Gold Token",
+      "market_cap": 1088391,
+      "keywords": [
+        "gldt",
+        "gold token"
+      ]
+    },
+    {
+      "symbol": "USDM1",
+      "name": "USDM1",
+      "market_cap": 1026376,
+      "keywords": [
+        "usdm1"
+      ]
+    },
+    {
+      "symbol": "BFUSD",
+      "name": "BitFi USD",
+      "market_cap": 1022937,
+      "keywords": [
+        "bfusd",
+        "bitfi usd"
+      ]
+    },
+    {
+      "symbol": "CADC",
+      "name": "CAD Coin",
+      "market_cap": 1013617,
+      "keywords": [
+        "cadc",
+        "cad coin"
+      ]
+    }
+  ]
+}

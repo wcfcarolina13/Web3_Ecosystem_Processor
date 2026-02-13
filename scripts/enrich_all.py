@@ -139,6 +139,16 @@ def run_step_coingecko(csv_path: Path, chain: str, target_assets: list,
 def run_step_website(csv_path: Path, chain: str, target_assets: list,
                      dry_run: bool, **kwargs) -> dict:
     """Run website keyword scan enrichment."""
+    # Ensure stablecoin catalog is fresh (auto-refresh if >7 days old)
+    catalog_count = 0
+    try:
+        from scripts.build_stablecoin_catalog import ensure_catalog
+        catalog_path = Path(__file__).parent.parent / "config" / "stablecoin_catalog.json"
+        catalog = ensure_catalog(catalog_path)
+        catalog_count = len(catalog.get("stablecoins", []))
+    except Exception as e:
+        logger.warning("Stablecoin catalog refresh failed: %s (continuing with cached/empty)", e)
+
     from scripts.enrich_website_keywords import enrich_csv
     total, scanned, found, errors = enrich_csv(
         csv_path, chain, target_assets, dry_run=dry_run,
@@ -146,6 +156,7 @@ def run_step_website(csv_path: Path, chain: str, target_assets: list,
     return {
         "total": total, "scanned": scanned,
         "keywords_found": found, "fetch_errors": errors,
+        "catalog_stablecoins": catalog_count,
     }
 
 

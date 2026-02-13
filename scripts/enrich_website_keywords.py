@@ -34,6 +34,38 @@ sys.path.insert(0, str(Path(__file__).parent.parent))
 from lib.csv_utils import load_csv, write_csv, find_main_csv
 
 
+# ── Dynamic stablecoin catalog ──────────────────────────────────────────
+
+CATALOG_PATH = Path(__file__).parent.parent / "config" / "stablecoin_catalog.json"
+
+
+def load_dynamic_stablecoins(catalog_path: Path = CATALOG_PATH) -> Dict[str, List[str]]:
+    """
+    Load dynamic stablecoin keywords from cached CoinGecko catalog.
+
+    Returns dict like {"DAI": ["dai"], "FRAX": ["frax"], "TUSD": ["tusd", "trueusd"]}.
+    USDT and USDC are excluded (they have their own hardcoded path).
+    Returns empty dict if catalog is missing or corrupt.
+    """
+    if not catalog_path.exists():
+        return {}
+    try:
+        with open(catalog_path) as f:
+            catalog = json.load(f)
+        result: Dict[str, List[str]] = {}
+        for coin in catalog.get("stablecoins", []):
+            symbol = coin["symbol"].upper()
+            # NEVER include USDT or USDC here
+            if symbol in ("USDT", "USDC"):
+                continue
+            keywords = coin.get("keywords", [])
+            if keywords:
+                result[symbol] = keywords
+        return result
+    except (json.JSONDecodeError, KeyError, TypeError):
+        return {}
+
+
 # ── Keyword dictionaries ────────────────────────────────────────────────
 
 # Stablecoin keywords — keyed by target asset ticker
@@ -177,16 +209,19 @@ def html_to_text(html: str) -> str:
 def scan_keywords(
     text: str,
     target_assets: List[str],
+    dynamic_stablecoins: Optional[Dict[str, List[str]]] = None,
 ) -> Dict:
     """
     Scan plain text for asset/stablecoin/DeFi keywords.
 
     Returns dict with:
         found_assets: {asset_key: [matched_keywords]}
+        found_dynamic_stablecoins: {symbol: [matched_keywords]}
         found_generic_stablecoin: bool
         found_web3_signal: [matched_keywords]
     """
     found_assets: Dict[str, List[str]] = {}
+    found_dynamic: Dict[str, List[str]] = {}
     found_web3: List[str] = []
     found_generic = False
 
@@ -222,6 +257,20 @@ def scan_keywords(
         if matches:
             found_assets[asset] = matches
 
+    # Check dynamic stablecoin keywords (NOT gated by target_assets)
+    if dynamic_stablecoins:
+        for symbol, keywords in dynamic_stablecoins.items():
+            matches = []
+            for kw in keywords:
+                if len(kw) <= 5:
+                    if re.search(r"\b" + re.escape(kw) + r"\b", text):
+                        matches.append(kw)
+                else:
+                    if kw in text:
+                        matches.append(kw)
+            if matches:
+                found_dynamic[symbol] = matches
+
     # Generic stablecoin mentions
     for kw in GENERIC_STABLECOIN_KEYWORDS:
         if kw in text:
@@ -239,6 +288,7 @@ def scan_keywords(
 
     return {
         "found_assets": found_assets,
+        "found_dynamic_stablecoins": found_dynamic,
         "found_generic_stablecoin": found_generic,
         "found_web3_signal": found_web3,
     }
@@ -257,6 +307,11 @@ def format_scan_note(scan_result: Dict) -> str:
     for asset, keywords in scan_result["found_assets"].items():
         kw_str = "; ".join(keywords)
         parts.append(f"{asset} keywords ({kw_str})")
+
+    # Dynamic stablecoin findings (same format for promote_hints.py compatibility)
+    for symbol, keywords in scan_result.get("found_dynamic_stablecoins", {}).items():
+        kw_str = "; ".join(keywords)
+        parts.append(f"{symbol} keywords ({kw_str})")
 
     # Generic stablecoin
     if scan_result["found_generic_stablecoin"]:
@@ -323,6 +378,13 @@ def enrich_csv(
     print(f"  {total} rows loaded")
     print(f"  Target assets: {', '.join(target_assets)}")
 
+    # Load dynamic stablecoin catalog (beyond USDT/USDC)
+    dynamic_stablecoins = load_dynamic_stablecoins()
+    if dynamic_stablecoins:
+        print(f"  Dynamic stablecoin catalog: {len(dynamic_stablecoins)} entries loaded")
+    else:
+        print(f"  Dynamic stablecoin catalog: not available (scanning USDT/USDC only)")
+
     # Count eligible rows
     eligible = [i for i, r in enumerate(rows) if should_scan_row(r)]
     if limit > 0:
@@ -372,13 +434,14 @@ def enrich_csv(
             continue
 
         # Scan for keywords
-        result = scan_keywords(text, target_assets)
+        result = scan_keywords(text, target_assets, dynamic_stablecoins=dynamic_stablecoins)
         note_text = format_scan_note(result)
 
         if note_text:
             keywords_found += 1
-            # Show what we found
-            asset_list = ", ".join(result["found_assets"].keys())
+            # Show what we found (include dynamic stablecoins)
+            all_asset_keys = list(result["found_assets"].keys()) + list(result.get("found_dynamic_stablecoins", {}).keys())
+            asset_list = ", ".join(all_asset_keys)
             extras = []
             if result["found_generic_stablecoin"]:
                 extras.append("stablecoin")
@@ -449,6 +512,8 @@ def main():
                         help="Process only first N eligible rows")
     parser.add_argument("--assets",
                         help="Override target assets (comma-separated)")
+    parser.add_argument("--refresh-catalog", action="store_true",
+                        help="Force refresh stablecoin catalog from CoinGecko before scanning")
     args = parser.parse_args()
 
     # Resolve CSV path
@@ -470,6 +535,12 @@ def main():
         args.assets.split(",") if args.assets
         else chain_config.get("target_assets", ["USDT", "USDC"])
     )
+
+    # Refresh stablecoin catalog if requested
+    if args.refresh_catalog:
+        from scripts.build_stablecoin_catalog import ensure_catalog
+        print("Refreshing stablecoin catalog...")
+        ensure_catalog(CATALOG_PATH, max_age_days=0)
 
     total, scanned, found, errors = enrich_csv(
         csv_path, args.chain, target_assets,

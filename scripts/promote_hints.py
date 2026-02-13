@@ -31,12 +31,15 @@ PROMOTE_MARKER = "promoted: website-scan"
 UNVERIFIED_TAG = "[UNVERIFIED website-scan]"
 PROMOTED_TAG = "[PROMOTED from website-scan]"
 
-# Pattern matching scan-block segments
+# Pattern matching scan-block segments (generalized for dynamic stablecoin tickers)
 SCAN_PATTERNS = re.compile(
-    r"(USDT|USDC|SOL|STRK|ADA|APT|ETH|BTC)\s+keywords|"
+    r"[A-Z0-9]{2,10}\s+keywords|"
     r"stablecoin mentions|"
     r"web3\("
 )
+
+# Known non-stablecoin asset tickers (chain tokens, not stablecoins)
+KNOWN_CHAIN_ASSETS = {"SOL", "STRK", "ADA", "APT", "ETH", "BTC"}
 
 
 # ── Note Parsing ──────────────────────────────────────────────
@@ -52,6 +55,8 @@ def parse_scan_note(notes: str) -> Dict:
         "has_scan": False,
         "has_usdt": False,
         "has_usdc": False,
+        "has_other_stablecoin": False,
+        "other_stablecoin_symbols": [],
         "has_stablecoin_mention": False,
         "has_web3_signal": False,
         "asset_count": 0,
@@ -98,10 +103,22 @@ def parse_scan_note(notes: str) -> Dict:
     if "web3(" in full_text.lower():
         result["has_web3_signal"] = True
 
-    for asset in ("SOL", "STRK", "ADA", "APT", "ETH", "BTC"):
+    for asset in KNOWN_CHAIN_ASSETS:
         if f"{asset} keywords" in full_text:
             asset_types.add(asset)
 
+    # Detect dynamic stablecoin keywords (any ticker not in known sets)
+    _other_re = re.compile(r"([A-Z0-9]{2,10})\s+keywords")
+    _known_all = KNOWN_CHAIN_ASSETS | {"USDT", "USDC"}
+    other_stablecoin_symbols = []
+    for m in _other_re.finditer(full_text):
+        sym = m.group(1)
+        if sym not in _known_all:
+            other_stablecoin_symbols.append(sym)
+            asset_types.add(sym)
+
+    result["has_other_stablecoin"] = len(other_stablecoin_symbols) > 0
+    result["other_stablecoin_symbols"] = other_stablecoin_symbols
     result["asset_count"] = len(asset_types)
     return result
 
@@ -146,7 +163,7 @@ def apply_strategy_general_stablecoin(row: Dict, scan: Dict) -> Tuple[Dict, str]
     if scan["has_usdt"]:
         return {}, ""
 
-    if not (scan["has_usdc"] or scan["has_stablecoin_mention"]):
+    if not (scan["has_usdc"] or scan["has_stablecoin_mention"] or scan.get("has_other_stablecoin", False)):
         return {}, ""
 
     if _is_true(row.get("Suspect USDT support?", "")):
@@ -160,6 +177,9 @@ def apply_strategy_general_stablecoin(row: Dict, scan: Dict) -> Tuple[Dict, str]
     }
     if scan["has_usdc"]:
         return updates, "USDC → General Stablecoin (no evidence of USDT)"
+    if scan.get("has_other_stablecoin"):
+        symbols = ", ".join(scan.get("other_stablecoin_symbols", []))
+        return updates, f"{symbols} → General Stablecoin (no evidence of USDT)"
     return updates, "stablecoin → General Stablecoin"
 
 
@@ -169,7 +189,7 @@ def apply_strategy_web3(row: Dict, scan: Dict) -> Tuple[Dict, str]:
 
     Only fires when no stablecoin/USDT/USDC signals are present.
     """
-    if scan["has_usdt"] or scan["has_usdc"] or scan["has_stablecoin_mention"]:
+    if scan["has_usdt"] or scan["has_usdc"] or scan["has_stablecoin_mention"] or scan.get("has_other_stablecoin", False):
         return {}, ""
     if not scan["has_web3_signal"]:
         return {}, ""
@@ -274,12 +294,19 @@ def promote_hints(
                 row.update(updates)
                 annotate_notes(row)
                 add_promote_marker(row)
-                # Add explicit USDC note when promoting USDC-without-USDT
-                if "General Stablecoin Adoption" in updates and scan["has_usdc"] and not scan["has_usdt"]:
-                    usdc_note = "USDC support found, no evidence of USDT support"
-                    current_notes = row.get("Notes", "")
-                    if usdc_note not in current_notes:
-                        row["Notes"] = f"{current_notes} | {usdc_note}" if current_notes else usdc_note
+                # Add explicit stablecoin note when promoting without USDT
+                if "General Stablecoin Adoption" in updates and not scan["has_usdt"]:
+                    found_coins = []
+                    if scan["has_usdc"]:
+                        found_coins.append("USDC")
+                    for sym in scan.get("other_stablecoin_symbols", []):
+                        found_coins.append(sym)
+                    if found_coins:
+                        coin_str = ", ".join(found_coins)
+                        stbl_note = f"{coin_str} support found, no evidence of USDT support"
+                        current_notes = row.get("Notes", "")
+                        if stbl_note not in current_notes:
+                            row["Notes"] = f"{current_notes} | {stbl_note}" if current_notes else stbl_note
                 any_changes = True
         else:
             # No strategy fired (columns already set), but still mark as processed
