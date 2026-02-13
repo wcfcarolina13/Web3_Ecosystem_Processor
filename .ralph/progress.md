@@ -150,3 +150,30 @@ This is how Ralph maintains continuity across iterations.
 
 **Pipeline now 10 steps:** dedup → expand-grid → grid → defillama → coingecko → website → promote → stale → notes → sources
 
+### Session 9 — 2026-02-13 (Manual)
+
+**Accomplished:**
+- **Import Wizard** (`/import` page): 5-step wizard for merging external researcher CSVs
+  - Step 1: Upload CSV or paste from clipboard (auto-detect delimiter)
+  - Step 2: Auto-map columns (3-tier: exact → alias → fuzzy). Computed columns (e.g., Final Status) detected as read-only
+  - Step 3: Ecosystem split + duplicate detection (name fuzzy match + URL normalization)
+  - Step 4: Side-by-side diff preview with per-column merge strategy (append/keep ours/keep theirs/skip)
+  - Step 5: Commit with auto-backup, per-chain download, combined download
+  - Grid match resolution: primary vs secondary match columns, best match wins
+- **New files (3)**:
+  - `lib/import_engine.py`: Pure logic module — 13 functions for parsing, column mapping, ecosystem splitting, duplicate detection, merging
+  - `dashboard/import_session.py`: In-memory session manager with threading locks and 30-min TTL
+  - `dashboard/import_api.py`: Flask blueprint with 7 routes (page, parse, map, analyze, preview, commit, download-combined)
+- **Modified files (5)**: `dashboard/__init__.py`, `dashboard/templates/base.html`, `dashboard/static/style.css`, `dashboard/templates/import.html` (new), `dashboard/templates/guide.html`
+
+### Session 10 — 2026-02-13 (Manual)
+
+**Accomplished:**
+- **Column rename: "Chain" → "Ecosystem/Chain"**: Updated across 8 files (columns.py, import_engine.py, csv_utils.py, compare.py, popup.js, import.html, guide.html). Backward-compat fallback in `load_csv()` silently renames old "Chain" headers at read time — existing CSVs continue to work.
+- **Auto-add ecosystems during import**: When unmatched ecosystems are detected in Step 3, they're automatically added to `chains.json` with minimal config (id, name, default target_assets=USDT/USDC, empty sources). Data directories created. No more Pipeline page detour. Tested: Kava, Polkadot, Tezos all auto-added correctly.
+- **Combined download**: New `GET /api/import/download-combined/<session_id>` endpoint generates a single merged CSV with all ecosystems. "Download Combined CSV" button appears in Step 5 when 2+ chains committed.
+
+**Commits:**
+- `639480d` — feat: add Import Wizard for merging external researcher data
+- `3c4c8f7` — feat: rename Chain to Ecosystem/Chain, auto-add ecosystems, combined download
+
