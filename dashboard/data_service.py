@@ -316,6 +316,91 @@ def compute_website_scan_details(rows: List[Dict]) -> dict:
     }
 
 
+# ── Website health ───────────────────────────────────────────
+
+def _get_health_status(row: Dict) -> str:
+    """Extract health-check status from Evidence column."""
+    evidence = row.get("Evidence & Source URLs", "")
+    match = re.search(r"health-check:\s*(\w+)", evidence)
+    return match.group(1) if match else ""
+
+
+def _extract_health_detail(evidence: str) -> str:
+    """Extract detail from health-check marker (e.g., 'dead (HTTP 404)' → 'HTTP 404')."""
+    match = re.search(r"health-check:\s*\w+\s*\(([^)]+)\)", evidence)
+    return match.group(1) if match else ""
+
+
+def compute_website_health(rows: List[Dict]) -> dict:
+    """
+    Parse Evidence for health-check markers.
+    Returns counts of alive, dead, timeout, dns_fail, error, unchecked.
+    """
+    alive = 0
+    dead = 0
+    timeout = 0
+    dns_fail = 0
+    error = 0
+    unchecked = 0
+    no_url = 0
+    dead_projects = []
+
+    for r in rows:
+        website = r.get("Website", "").strip()
+        status = _get_health_status(r)
+
+        if not website:
+            no_url += 1
+            continue
+
+        if not status:
+            unchecked += 1
+            continue
+
+        evidence = r.get("Evidence & Source URLs", "")
+        proj_info = {
+            "name": r.get("Project Name", "").strip(),
+            "website": website,
+            "detail": _extract_health_detail(evidence),
+        }
+
+        if status == "alive":
+            alive += 1
+        elif status == "dead":
+            dead += 1
+            dead_projects.append(proj_info)
+        elif status == "timeout":
+            timeout += 1
+            proj_info["detail"] = proj_info["detail"] or "timeout"
+            dead_projects.append(proj_info)
+        elif status == "dns_fail":
+            dns_fail += 1
+            proj_info["detail"] = proj_info["detail"] or "DNS failure"
+            dead_projects.append(proj_info)
+        elif status == "error":
+            error += 1
+            proj_info["detail"] = proj_info["detail"] or "connection error"
+            dead_projects.append(proj_info)
+
+    total_checked = alive + dead + timeout + dns_fail + error
+    total_dead = dead + timeout + dns_fail + error
+
+    return {
+        "alive": alive,
+        "dead": dead,
+        "timeout": timeout,
+        "dns_fail": dns_fail,
+        "error": error,
+        "unchecked": unchecked,
+        "no_url": no_url,
+        "total_checked": total_checked,
+        "total_dead": total_dead,
+        "dead_pct": round(total_dead / total_checked * 100, 1) if total_checked else 0,
+        "alive_pct": round(alive / total_checked * 100, 1) if total_checked else 0,
+        "dead_projects": sorted(dead_projects, key=lambda x: x["name"])[:50],
+    }
+
+
 # ── Project table ─────────────────────────────────────────────
 
 def get_project_table(rows: List[Dict], filters: dict) -> List[Dict]:
@@ -328,6 +413,7 @@ def get_project_table(rows: List[Dict], filters: dict) -> List[Dict]:
     source_filter = filters.get("source", "").strip()
     grid_filter = filters.get("grid_matched", "").strip()
     evidence_filter = filters.get("has_evidence", "").strip()
+    health_filter = filters.get("website_health", "").strip()
 
     for r in rows:
         name = r.get("Project Name", "").strip()
@@ -348,6 +434,15 @@ def get_project_table(rows: List[Dict], filters: dict) -> List[Dict]:
         if evidence_filter == "no" and _is_nonempty(r.get("Evidence & Source URLs", "")):
             continue
 
+        # Website health filter
+        health = _get_health_status(r)
+        if health_filter == "alive" and health != "alive":
+            continue
+        if health_filter == "dead" and health not in ("dead", "timeout", "dns_fail", "error"):
+            continue
+        if health_filter == "unchecked" and health:
+            continue
+
         # Build display row
         evidence = r.get("Evidence & Source URLs", "").strip()
         result.append({
@@ -365,6 +460,7 @@ def get_project_table(rows: List[Dict], filters: dict) -> List[Dict]:
             "skip": _is_true(r.get("Skip", "")),
             "added": _is_true(r.get("Added", "")),
             "notes": r.get("Notes", "").strip()[:150],
+            "website_health": health or "unchecked",
         })
 
     return result

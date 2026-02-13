@@ -14,6 +14,7 @@ from .data_service import (
     compute_category_breakdown,
     compute_grid_status,
     compute_website_scan_details,
+    compute_website_health,
     get_project_table,
     get_filter_options,
 )
@@ -44,6 +45,7 @@ def index():
     categories = compute_category_breakdown(rows)
     grid_status = compute_grid_status(rows)
     website_scan = compute_website_scan_details(rows)
+    website_health = compute_website_health(rows)
 
     return render_template(
         "index.html",
@@ -58,6 +60,7 @@ def index():
         categories=categories,
         grid_status=grid_status,
         website_scan=website_scan,
+        website_health=website_health,
     )
 
 
@@ -82,6 +85,7 @@ def table():
         "source": request.args.get("source", ""),
         "grid_matched": request.args.get("grid_matched", ""),
         "has_evidence": request.args.get("has_evidence", ""),
+        "website_health": request.args.get("website_health", ""),
     }
 
     projects = get_project_table(rows, filters)
@@ -117,6 +121,7 @@ def api_summary():
         "categories": compute_category_breakdown(rows),
         "grid_status": compute_grid_status(rows),
         "website_scan": compute_website_scan_details(rows),
+        "website_health": compute_website_health(rows),
     })
 
 
@@ -131,5 +136,6 @@ def api_projects():
         "source": request.args.get("source", ""),
         "grid_matched": request.args.get("grid_matched", ""),
         "has_evidence": request.args.get("has_evidence", ""),
+        "website_health": request.args.get("website_health", ""),
     }
     return jsonify(get_project_table(rows, filters))

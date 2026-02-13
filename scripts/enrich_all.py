@@ -48,7 +48,7 @@ logger = get_logger(__name__)
 # Lazy imports — only import each module when its step runs,
 # so a broken step doesn't block the others.
 
-STEPS = ["dedup", "expand-grid", "grid", "defillama", "coingecko", "website", "promote", "notes", "sources"]
+STEPS = ["dedup", "expand-grid", "grid", "defillama", "coingecko", "website", "promote", "stale", "notes", "sources"]
 
 STEP_DESCRIPTIONS = {
     "dedup": "Deduplicate rows (normalized name + website domain)",
@@ -58,6 +58,7 @@ STEP_DESCRIPTIONS = {
     "coingecko": "CoinGecko batch platform deployments",
     "website": "Website keyword scan (homepage HTML for asset/stablecoin keywords)",
     "promote": "Promote high-confidence website-scan hints to boolean columns",
+    "stale": "Website health check (HTTP HEAD — flag dead/unreachable projects)",
     "notes": "Notes cleanup (strip prefixes, emojis, fluff)",
     "sources": "Fix Source column (replace 'Generic Scraper' with actual source)",
 }
@@ -161,6 +162,20 @@ def run_step_promote(csv_path: Path, chain: str, dry_run: bool, **kwargs) -> dic
     }
 
 
+def run_step_stale(csv_path: Path, chain: str, dry_run: bool, **kwargs) -> dict:
+    """Run website health check (stale data detection)."""
+    from scripts.check_websites import check_all_websites
+    result = check_all_websites(csv_path, chain, dry_run=dry_run)
+    return {
+        "checked": result["checked"],
+        "alive": result["alive"],
+        "dead": result["dead"],
+        "timeout": result["timeout"],
+        "dns_fail": result["dns_fail"],
+        "error": result["error"],
+    }
+
+
 def run_step_notes(csv_path: Path, dry_run: bool, **kwargs) -> dict:
     """Run Notes cleanup."""
     from scripts.clean_notes import run_cleanup
@@ -183,6 +198,7 @@ STEP_RUNNERS = {
     "coingecko": run_step_coingecko,
     "website": run_step_website,
     "promote": run_step_promote,
+    "stale": run_step_stale,
     "notes": run_step_notes,
     "sources": run_step_sources,
 }

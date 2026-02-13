@@ -258,6 +258,7 @@
             <tr><td><code>twitter</code></td><td>Validate and normalize Twitter/X handles</td></tr>
             <tr><td><code>website</code></td><td>Scan project websites for keywords and technologies</td></tr>
             <tr><td><code>hints</code></td><td>Promote strong matches to confirmed based on evidence</td></tr>
+            <tr><td><code>stale</code></td><td>HTTP health check — flag dead/unreachable project websites</td></tr>
             <tr><td><code>validate</code></td><td>Final data quality checks and cleanup</td></tr>
         </table>
         <p>
@@ -334,6 +335,12 @@
                 <td>Pipeline fails on a step</td>
                 <td>The failed step is highlighted in red with an error message.
                     Fix the issue and re-run — you can uncheck completed steps to skip them.</td>
+            </tr>
+            <tr>
+                <td>Many projects show as "DEAD"</td>
+                <td>The stale check uses HTTP HEAD requests. Some sites block bots or have
+                    intermittent issues. Use <code>--recheck-dead</code> to retry dead sites.
+                    You can also filter dead projects in the Projects table to review them.</td>
             </tr>
             <tr>
                 <td>Upload says "missing required columns"</td>

@@ -921,3 +921,116 @@ footer code {
         grid-template-columns: 1fr;
     }
 }
+
+/* ── Website Health ── */
+.health-summary {
+    display: flex;
+    gap: 16px;
+    flex-wrap: wrap;
+    margin: 16px 0;
+}
+
+.health-stat {
+    flex: 1;
+    min-width: 120px;
+    padding: 16px;
+    border-radius: var(--radius);
+    text-align: center;
+}
+
+.health-stat .health-value {
+    display: block;
+    font-size: 28px;
+    font-weight: 700;
+    line-height: 1;
+    margin-bottom: 4px;
+}
+
+.health-stat .health-label {
+    display: block;
+    font-size: 12px;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.3px;
+    margin-bottom: 2px;
+}
+
+.health-stat .health-pct {
+    display: block;
+    font-size: 13px;
+    font-weight: 600;
+}
+
+.health-alive {
+    background: #f0faf0;
+}
+
+.health-alive .health-value { color: var(--success); }
+.health-alive .health-pct { color: var(--success); }
+
+.health-dead {
+    background: #fef2f2;
+}
+
+.health-dead .health-value { color: var(--danger); }
+.health-dead .health-pct { color: var(--danger); }
+
+.health-unchecked {
+    background: var(--bg);
+}
+
+.health-unchecked .health-value { color: var(--text-muted); }
+
+.dead-projects-list {
+    margin-top: 12px;
+    font-size: 13px;
+}
+
+.dead-projects-list summary {
+    cursor: pointer;
+    font-weight: 600;
+    color: var(--danger);
+    padding: 4px 0;
+}
+
+.dead-projects-list .detail-table {
+    margin-top: 8px;
+}
+
+.dead-projects-list th {
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.3px;
+    color: var(--text-muted);
+    padding: 6px 8px;
+    text-align: left;
+    border-bottom: 2px solid var(--border);
+}
+
+.dead-projects-list td {
+    padding: 4px 8px;
+    font-size: 12px;
+    border-bottom: 1px solid var(--bg);
+}
+
+.health-issue {
+    color: var(--danger);
+    font-family: 'SF Mono', 'Fira Code', monospace;
+    font-size: 11px;
+}
+
+/* Health badges in table */
+.health-alive-badge {
+    background: var(--success) !important;
+    color: white !important;
+    font-size: 10px;
+    padding: 2px 6px;
+}
+
+.health-dead-badge {
+    background: var(--danger) !important;
+    color: white !important;
+    font-size: 10px;
+    padding: 2px 6px;
+    animation: pulse 2s ease-in-out infinite;
+}

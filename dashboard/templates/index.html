@@ -85,7 +85,51 @@
 </section>
 {% endif %}
 
-<!-- Section 8: Coverage Details -->
+<!-- Section 8: Website Health -->
+{% if website_health.total_checked > 0 %}
+<section class="charts-row">
+    <div class="chart-box">
+        <h3>Website Health</h3>
+        <canvas id="health-chart"></canvas>
+    </div>
+    <div class="chart-box wide">
+        <h3>Data Quality</h3>
+        <div class="health-summary">
+            <div class="health-stat health-alive">
+                <span class="health-value">{{ website_health.alive }}</span>
+                <span class="health-label">Alive</span>
+                <span class="health-pct">{{ website_health.alive_pct }}%</span>
+            </div>
+            <div class="health-stat health-dead">
+                <span class="health-value">{{ website_health.total_dead }}</span>
+                <span class="health-label">Dead / Unreachable</span>
+                <span class="health-pct">{{ website_health.dead_pct }}%</span>
+            </div>
+            <div class="health-stat health-unchecked">
+                <span class="health-value">{{ website_health.unchecked }}</span>
+                <span class="health-label">Not Checked</span>
+            </div>
+        </div>
+        {% if website_health.dead_projects %}
+        <details class="dead-projects-list">
+            <summary>Dead projects ({{ website_health.total_dead }})</summary>
+            <table class="detail-table">
+                <tr><th>Project</th><th>Website</th><th>Issue</th></tr>
+                {% for p in website_health.dead_projects %}
+                <tr>
+                    <td>{{ p.name }}</td>
+                    <td><a href="{{ p.website }}" target="_blank" rel="noopener">{{ p.website | truncate(40) }}</a></td>
+                    <td class="health-issue">{{ p.detail }}</td>
+                </tr>
+                {% endfor %}
+            </table>
+        </details>
+        {% endif %}
+    </div>
+</section>
+{% endif %}
+
+<!-- Section 9: Coverage Details -->
 <section class="details-grid">
     <div class="detail-card">
         <h3>Social Coverage</h3>
@@ -272,6 +316,36 @@ if (gsData.length > 0) {
         }
     });
 }
+{% endif %}
+
+// ── Website Health Doughnut ──
+{% if website_health.total_checked > 0 %}
+const healthData = {{ website_health | tojson }};
+new Chart(document.getElementById('health-chart'), {
+    type: 'doughnut',
+    data: {
+        labels: [
+            'Alive (' + healthData.alive + ')',
+            'Dead (' + healthData.dead + ')',
+            'Timeout (' + healthData.timeout + ')',
+            'DNS Fail (' + healthData.dns_fail + ')',
+            'Error (' + healthData.error + ')',
+        ],
+        datasets: [{
+            data: [healthData.alive, healthData.dead, healthData.timeout,
+                   healthData.dns_fail, healthData.error],
+            backgroundColor: ['#59a14f', '#e15759', '#f28e2b', '#b07aa1', '#bab0ac'],
+        }]
+    },
+    options: {
+        plugins: {
+            legend: {
+                position: 'bottom',
+                labels: { font: { size: 11 }, boxWidth: 12 }
+            }
+        }
+    }
+});
 {% endif %}
 </script>
 {% endblock %}

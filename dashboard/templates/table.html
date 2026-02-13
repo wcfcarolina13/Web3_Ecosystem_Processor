@@ -57,6 +57,16 @@
         </div>
 
         <div class="filter-group">
+            <label for="website_health">Health</label>
+            <select name="website_health" id="website_health">
+                <option value="">All</option>
+                <option value="alive" {% if filters.website_health == 'alive' %}selected{% endif %}>Alive</option>
+                <option value="dead" {% if filters.website_health == 'dead' %}selected{% endif %}>Dead</option>
+                <option value="unchecked" {% if filters.website_health == 'unchecked' %}selected{% endif %}>Unchecked</option>
+            </select>
+        </div>
+
+        <div class="filter-group">
             <button type="submit" class="btn">Filter</button>
             <a href="/table?chain={{ chain }}" class="btn btn-secondary">Reset</a>
         </div>
@@ -78,6 +88,7 @@
                 <th>Website</th>
                 <th class="sortable" data-col="4">Grid Status</th>
                 <th>Profile</th>
+                <th>Health</th>
                 <th>USDT?</th>
                 <th>Stable?</th>
                 <th>Evidence</th>
@@ -101,6 +112,7 @@
                 </td>
                 <td>{{ p.grid_status }}</td>
                 <td>{{ p.profile_name }}</td>
+                <td class="bool-cell">{% if p.website_health == 'alive' %}<span class="badge health-alive-badge">OK</span>{% elif p.website_health in ('dead', 'timeout', 'dns_fail', 'error') %}<span class="badge health-dead-badge">DEAD</span>{% endif %}</td>
                 <td class="bool-cell">{% if p.suspect_usdt %}<span class="badge usdt">USDT</span>{% endif %}</td>
                 <td class="bool-cell">{% if p.general_stablecoin %}<span class="badge stable">Stable</span>{% endif %}{% if p.web3_no_stable %}<span class="badge web3">Web3</span>{% endif %}</td>
                 <td class="evidence-cell" title="{{ p.evidence }}">{{ p.evidence }}</td>
