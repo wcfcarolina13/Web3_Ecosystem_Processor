@@ -169,7 +169,7 @@ def generate_new_csv_rows(new_projects: list, chain: str, source: str) -> list:
                 "Website": url,
                 "X Link": x_link,
                 "X Handle": twitter,
-                "Chain": chain,
+                "Ecosystem/Chain": chain,
             }
         )
         rows.append(row)

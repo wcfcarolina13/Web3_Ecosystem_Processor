@@ -205,7 +205,7 @@ function toCSV(data) {
     'Root ID',
     'Matched URL',
     'Matched via',
-    'Chain',
+    'Ecosystem/Chain',
     'Source',
     'Notes',
     'Evidence & Source URLs'

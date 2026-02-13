@@ -67,7 +67,15 @@ def load_csv(csv_path: Path, validate: bool = True) -> List[Dict]:
                     f"CSV {csv_path} missing required columns: "
                     f"{', '.join(sorted(missing))}"
                 )
+        # Backward compat: detect old "Chain" header → rename to "Ecosystem/Chain"
+        needs_chain_rename = (
+            reader.fieldnames
+            and "Chain" in reader.fieldnames
+            and "Ecosystem/Chain" not in reader.fieldnames
+        )
         for row in reader:
+            if needs_chain_rename and "Chain" in row:
+                row["Ecosystem/Chain"] = row.pop("Chain")
             rows.append(row)
     return rows
 

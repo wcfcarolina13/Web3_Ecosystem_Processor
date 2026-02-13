@@ -166,7 +166,7 @@
                 <table class="project-table" id="ecosystem-table">
                     <thead>
                         <tr>
-                            <th>Chain</th>
+                            <th>Ecosystem/Chain</th>
                             <th>Incoming</th>
                             <th>Existing</th>
                             <th>New</th>
@@ -176,6 +176,13 @@
                     </thead>
                     <tbody id="ecosystem-tbody"></tbody>
                 </table>
+            </div>
+
+            <!-- Auto-added chains notice -->
+            <div id="auto-added-notice" style="display:none; margin-top:12px;" class="guide-callout" role="status">
+                <strong style="color:var(--success);">✓ Auto-added ecosystems:</strong>
+                <span id="auto-added-list"></span>
+                — created with default settings. Configure DefiLlama slugs on the <a href="/pipeline">Pipeline</a> page later.
             </div>
 
             <!-- Unmatched warning -->
@@ -470,7 +477,15 @@
                 </tr>`;
             }).join('');
 
-            // Unmatched warning
+            // Auto-added chains notice
+            if (data.auto_added_chains && data.auto_added_chains.length) {
+                document.getElementById('auto-added-notice').style.display = 'block';
+                document.getElementById('auto-added-list').textContent = data.auto_added_chains.join(', ');
+            } else {
+                document.getElementById('auto-added-notice').style.display = 'none';
+            }
+
+            // Unmatched warning (should be rare now with auto-add)
             if (data.unmatched_ecosystems && data.unmatched_ecosystems.length) {
                 document.getElementById('unmatched-warning').style.display = 'block';
                 document.getElementById('unmatched-list').textContent = data.unmatched_ecosystems.join(', ');
@@ -612,6 +627,17 @@
                     Import complete: ${s.chains_affected} chain(s) updated,
                     ${s.total_added} rows added, ${s.total_updated} rows merged.
                 </div>`;
+
+            // Combined download button
+            const successCount = data.results.filter(r => !r.error).length;
+            if (successCount > 1) {
+                document.getElementById('commit-summary').innerHTML += `
+                    <div style="margin-top:12px;">
+                        <a href="/api/import/download-combined/${sessionId}" class="btn" style="font-size:13px;">
+                            ⬇ Download Combined CSV (all ecosystems)
+                        </a>
+                    </div>`;
+            }
 
             // Per-chain details
             document.getElementById('commit-details').innerHTML =

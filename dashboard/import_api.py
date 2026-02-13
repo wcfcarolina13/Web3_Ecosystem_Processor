@@ -2,19 +2,26 @@
 Flask blueprint for the Import Wizard — parse, map, analyze, preview, commit.
 
 Routes:
-    GET  /import                   — Import wizard page (HTML)
-    POST /api/import/parse         — Parse uploaded CSV or pasted text
-    POST /api/import/map           — Auto-map or confirm column mappings
-    POST /api/import/analyze       — Split by ecosystem, detect duplicates
-    POST /api/import/preview       — Generate merge preview with diffs
-    POST /api/import/commit        — Backup + write merged CSVs
+    GET  /import                        — Import wizard page (HTML)
+    POST /api/import/parse              — Parse uploaded CSV or pasted text
+    POST /api/import/map                — Auto-map or confirm column mappings
+    POST /api/import/analyze            — Split by ecosystem, detect duplicates
+    POST /api/import/preview            — Generate merge preview with diffs
+    POST /api/import/commit             — Backup + write merged CSVs
+    GET  /api/import/download-combined  — Download all ecosystems as one CSV
 """
 
+import csv
+import io
 import json
+import os
+import re
+import tempfile
 from pathlib import Path
 
 from flask import (
     Blueprint,
+    Response,
     current_app,
     jsonify,
     render_template,
@@ -56,6 +63,69 @@ def _load_chains_config() -> list:
     """Load chain definitions from config/chains.json."""
     with open(CONFIG_PATH) as f:
         return json.load(f)["chains"]
+
+
+def _auto_add_chains(ecosystem_names: list) -> list:
+    """
+    Auto-add unmatched ecosystems to chains.json with minimal config.
+
+    Returns list of chain names that were successfully added.
+    """
+    try:
+        with open(CONFIG_PATH) as f:
+            config = json.load(f)
+    except Exception as e:
+        logger.error("Failed to load chains.json for auto-add: %s", e)
+        return []
+
+    existing_ids = {c["id"] for c in config["chains"]}
+    added = []
+
+    for name in ecosystem_names:
+        # Derive chain ID from name
+        chain_id = re.sub(r"[^a-z0-9]+", "-", name.lower()).strip("-")
+        if not chain_id or chain_id in existing_ids:
+            continue
+
+        new_chain = {
+            "id": chain_id,
+            "name": name,
+            "target_assets": ["USDT", "USDC"],
+            "sources": {},
+        }
+        config["chains"].append(new_chain)
+        existing_ids.add(chain_id)
+        added.append(name)
+
+        # Create data directory
+        data_dir = PROJECT_ROOT / "data" / chain_id
+        data_dir.mkdir(parents=True, exist_ok=True)
+
+        logger.info("Auto-added chain '%s' (%s) during import", chain_id, name)
+
+    if not added:
+        return []
+
+    # Atomic write
+    try:
+        fd, tmp_path = tempfile.mkstemp(
+            dir=CONFIG_PATH.parent, suffix=".tmp", prefix="chains_"
+        )
+        with os.fdopen(fd, "w") as f:
+            json.dump(config, f, indent=2)
+            f.write("\n")
+            f.flush()
+            os.fsync(f.fileno())
+        os.replace(tmp_path, CONFIG_PATH)
+    except Exception as e:
+        try:
+            os.unlink(tmp_path)
+        except OSError:
+            pass
+        logger.error("Failed to write chains.json during auto-add: %s", e)
+        return []
+
+    return added
 
 
 # ── HTML page ──
@@ -268,6 +338,15 @@ def api_import_analyze():
     # Split by ecosystem
     splits, unmatched = split_by_ecosystem(session.mapped_rows, chains_config)
 
+    # Auto-add unmatched ecosystems to chains.json
+    auto_added = []
+    if unmatched:
+        auto_added = _auto_add_chains(unmatched)
+        if auto_added:
+            # Reload config with newly added chains and re-split
+            chains_config = _load_chains_config()
+            splits, unmatched = split_by_ecosystem(session.mapped_rows, chains_config)
+
     # For each known chain, detect duplicates
     all_duplicates = {}
     all_new_rows = {}
@@ -346,6 +425,7 @@ def api_import_analyze():
         "session_id": session_id,
         "ecosystems": ecosystems_info,
         "unmatched_ecosystems": unmatched,
+        "auto_added_chains": auto_added,
         "totals": {
             "total_rows": len(session.mapped_rows),
             "matched_to_chains": sum(
@@ -552,3 +632,73 @@ def api_import_commit():
             "total_updated": total_updated,
         },
     })
+
+
+# ── Combined Download ──
+
+
+@import_bp.route("/api/import/download-combined/<session_id>")
+def api_import_download_combined(session_id):
+    """
+    Download all committed data across all ecosystems as a single CSV.
+
+    Merges rows from all chains in the session into one file, preserving
+    the Ecosystem/Chain column so the user knows which ecosystem each row
+    belongs to.
+    """
+    session = import_sessions.get_session(session_id)
+    if not session:
+        return jsonify({"error": "Session not found or expired"}), 404
+
+    if not session.commit_result:
+        return jsonify({"error": "No committed data (complete step 5 first)"}), 400
+
+    # Collect all rows from committed chain CSVs
+    all_rows = []
+    all_cols = list(CORRECT_COLUMNS)
+
+    for result in session.commit_result:
+        if "error" in result:
+            continue
+        csv_path = Path(result["csv_path"])
+        if not csv_path.exists():
+            continue
+        try:
+            rows = load_csv(csv_path, validate=False)
+            # Track any extra columns
+            for row in rows:
+                for col in row:
+                    if col not in all_cols:
+                        all_cols.append(col)
+            all_rows.extend(rows)
+        except Exception as e:
+            logger.warning("Failed to read %s for combined download: %s", csv_path, e)
+
+    if not all_rows:
+        return jsonify({"error": "No data available for download"}), 404
+
+    # Generate CSV
+    output = io.StringIO()
+    writer = csv.DictWriter(output, fieldnames=all_cols)
+    writer.writeheader()
+    for row in all_rows:
+        writer.writerow({k: row.get(k, "") for k in all_cols})
+
+    # Build filename from session info
+    filename = "combined_ecosystem_research.csv"
+    if session.filename:
+        stem = Path(session.filename).stem
+        filename = f"{stem}_combined.csv"
+
+    logger.info(
+        "Combined download: %d rows across %d chains (session %s)",
+        len(all_rows),
+        len(session.commit_result),
+        session_id,
+    )
+
+    return Response(
+        output.getvalue(),
+        mimetype="text/csv",
+        headers={"Content-Disposition": f"attachment; filename={filename}"},
+    )

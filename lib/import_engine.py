@@ -21,7 +21,8 @@ from .matching import find_match, normalize_name, similarity
 COLUMN_ALIASES = {
     "tags/categories": "Category",
     "description": "Notes",
-    "ecosystem": "Chain",
+    "ecosystem": "Ecosystem/Chain",
+    "chain": "Ecosystem/Chain",
     "status": "The Grid Status",
     "twitter handle": "X Handle",
     "twitter": "X Link",
@@ -322,11 +323,11 @@ def split_by_ecosystem(
     seen_unmatched = set()
 
     for row in rows:
-        eco = row.get("Chain", "").strip()
+        eco = row.get("Ecosystem/Chain", "").strip()
         chain_id = map_ecosystem_to_chain(eco, chains_config)
 
         if chain_id:
-            row["Chain"] = chain_id
+            row["Ecosystem/Chain"] = chain_id
             groups.setdefault(chain_id, []).append(row)
         else:
             if eco and eco not in seen_unmatched:

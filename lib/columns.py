@@ -28,7 +28,7 @@ CORRECT_COLUMNS = [
     "Root ID",
     "Matched URL",
     "Matched via",
-    "Chain",
+    "Ecosystem/Chain",
     "Source",
     "Notes",
     "Evidence & Source URLs",
@@ -49,5 +49,5 @@ def empty_row(chain: str = "") -> dict:
     """Return an empty row dict with all columns initialized to ''."""
     row = {col: "" for col in CORRECT_COLUMNS}
     if chain:
-        row["Chain"] = chain
+        row["Ecosystem/Chain"] = chain
     return row
