@@ -1,0 +1,672 @@
+{% extends "base.html" %}
+
+{% block title %}Import — Ecosystem Research{% endblock %}
+
+{% block content %}
+<div class="pipeline-section">
+    <h2>Import External Data</h2>
+
+    <!-- Wizard Step Indicator -->
+    <div class="wizard-steps">
+        <div class="wizard-step active" data-step="1">
+            <span class="wizard-num">1</span>
+            <span class="wizard-label">Upload</span>
+        </div>
+        <div class="wizard-step" data-step="2">
+            <span class="wizard-num">2</span>
+            <span class="wizard-label">Map Columns</span>
+        </div>
+        <div class="wizard-step" data-step="3">
+            <span class="wizard-num">3</span>
+            <span class="wizard-label">Analyze</span>
+        </div>
+        <div class="wizard-step" data-step="4">
+            <span class="wizard-num">4</span>
+            <span class="wizard-label">Preview</span>
+        </div>
+        <div class="wizard-step" data-step="5">
+            <span class="wizard-num">5</span>
+            <span class="wizard-label">Commit</span>
+        </div>
+    </div>
+
+    <!-- Step 1: Upload / Paste -->
+    <div class="panel wizard-panel" id="step-1">
+        <h3>Upload CSV or Paste Data</h3>
+        <div class="import-input-area">
+            <div class="import-tabs">
+                <button class="import-tab active" onclick="switchInputTab('file')">File Upload</button>
+                <button class="import-tab" onclick="switchInputTab('paste')">Paste from Clipboard</button>
+            </div>
+            <div id="tab-file" class="import-tab-content active">
+                <div class="upload-controls">
+                    <div class="filter-group">
+                        <label for="import-file">CSV File</label>
+                        <input type="file" id="import-file" accept=".csv,.tsv,.txt">
+                    </div>
+                    <button class="btn" onclick="parseFile()">Parse File</button>
+                </div>
+            </div>
+            <div id="tab-paste" class="import-tab-content" style="display:none;">
+                <div class="filter-group" style="width:100%;">
+                    <label for="import-paste">Paste tab-separated data (copy rows from a spreadsheet)</label>
+                    <textarea id="import-paste" class="import-textarea" rows="8"
+                        placeholder="Project Name&#9;Website&#9;Category&#9;...&#10;My Project&#9;https://example.com&#9;DeFi&#9;..."></textarea>
+                </div>
+                <button class="btn" style="margin-top:8px;" onclick="parsePaste()">Parse Pasted Data</button>
+            </div>
+        </div>
+        <div id="parse-status" class="status-msg"></div>
+
+        <!-- Parse results (shown after parsing) -->
+        <div id="parse-results" style="display:none;">
+            <div class="stats-grid" style="grid-template-columns: repeat(3, 1fr); margin-top:16px;">
+                <div class="stat-card primary">
+                    <span class="stat-value" id="stat-rows">0</span>
+                    <span class="stat-label">Rows</span>
+                </div>
+                <div class="stat-card">
+                    <span class="stat-value" id="stat-cols">0</span>
+                    <span class="stat-label">Columns</span>
+                </div>
+                <div class="stat-card success">
+                    <span class="stat-value" id="stat-ecosystems">0</span>
+                    <span class="stat-label">Ecosystems</span>
+                </div>
+            </div>
+
+            <!-- Ecosystem breakdown -->
+            <div id="ecosystem-breakdown" class="detail-card" style="margin-top:12px;"></div>
+
+            <!-- Sample rows -->
+            <details style="margin-top:12px;">
+                <summary style="cursor:pointer; font-weight:600; font-size:13px; color:var(--text-muted);">
+                    Preview sample rows
+                </summary>
+                <div class="table-container" style="margin-top:8px; max-height:300px; overflow:auto;">
+                    <table class="project-table" id="sample-table">
+                        <thead id="sample-thead"></thead>
+                        <tbody id="sample-tbody"></tbody>
+                    </table>
+                </div>
+            </details>
+
+            <div style="margin-top:16px;">
+                <button class="btn" onclick="goToStep(2)">Continue to Column Mapping</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Step 2: Column Mapping -->
+    <div class="panel wizard-panel" id="step-2" style="display:none;">
+        <h3>Column Mapping</h3>
+        <p style="font-size:13px; color:var(--text-muted); margin-bottom:16px;">
+            Map incoming columns to our canonical format. Green = exact match, yellow = suggested, red = unmapped (will be skipped), blue = extra column from source.
+        </p>
+
+        <div id="mapping-loading" class="status-msg">Loading auto-mappings...</div>
+        <div id="mapping-table-wrap" style="display:none;">
+            <div class="table-container" style="max-height:500px; overflow:auto;">
+                <table class="project-table" id="mapping-table">
+                    <thead>
+                        <tr>
+                            <th>Incoming Column</th>
+                            <th></th>
+                            <th>Maps To</th>
+                            <th>Confidence</th>
+                        </tr>
+                    </thead>
+                    <tbody id="mapping-tbody"></tbody>
+                </table>
+            </div>
+
+            <!-- Computed columns notice -->
+            <div id="computed-notice" style="display:none; margin-top:12px;" class="guide-callout">
+                <strong>Computed columns detected:</strong>
+                <span id="computed-list"></span>
+                — these will be preserved as read-only during merge.
+            </div>
+
+            <div style="margin-top:16px; display:flex; gap:12px;">
+                <button class="btn-secondary btn" onclick="goToStep(1)">Back</button>
+                <button class="btn" onclick="confirmMapping()">Confirm Mapping</button>
+            </div>
+        </div>
+        <div id="map-status" class="status-msg"></div>
+    </div>
+
+    <!-- Step 3: Ecosystem Split & Duplicates -->
+    <div class="panel wizard-panel" id="step-3" style="display:none;">
+        <h3>Ecosystem Analysis & Duplicate Detection</h3>
+        <div id="analyze-loading" class="status-msg">Analyzing ecosystems and detecting duplicates...</div>
+
+        <div id="analyze-results" style="display:none;">
+            <!-- Summary stats -->
+            <div class="stats-grid" style="grid-template-columns: repeat(4, 1fr); margin-bottom:16px;">
+                <div class="stat-card primary">
+                    <span class="stat-value" id="analyze-total">0</span>
+                    <span class="stat-label">Total Rows</span>
+                </div>
+                <div class="stat-card success">
+                    <span class="stat-value" id="analyze-new">0</span>
+                    <span class="stat-label">New</span>
+                </div>
+                <div class="stat-card" style="border-left:4px solid var(--warning);">
+                    <span class="stat-value" id="analyze-dupes">0</span>
+                    <span class="stat-label">Duplicates</span>
+                </div>
+                <div class="stat-card" style="border-left:4px solid var(--danger);">
+                    <span class="stat-value" id="analyze-unmatched">0</span>
+                    <span class="stat-label">Unmatched</span>
+                </div>
+            </div>
+
+            <!-- Per-ecosystem table -->
+            <div class="table-container">
+                <table class="project-table" id="ecosystem-table">
+                    <thead>
+                        <tr>
+                            <th>Chain</th>
+                            <th>Incoming</th>
+                            <th>Existing</th>
+                            <th>New</th>
+                            <th>Duplicates</th>
+                            <th>Status</th>
+                        </tr>
+                    </thead>
+                    <tbody id="ecosystem-tbody"></tbody>
+                </table>
+            </div>
+
+            <!-- Unmatched warning -->
+            <div id="unmatched-warning" style="display:none; margin-top:12px;" class="guide-callout">
+                <strong>Unmatched ecosystems:</strong>
+                <span id="unmatched-list"></span>
+                — these rows won't be imported. Add the chain on the Pipeline page first.
+            </div>
+
+            <div style="margin-top:16px; display:flex; gap:12px;">
+                <button class="btn-secondary btn" onclick="goToStep(2)">Back</button>
+                <button class="btn" onclick="generatePreview()">Continue to Preview</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Step 4: Merge Preview -->
+    <div class="panel wizard-panel" id="step-4" style="display:none;">
+        <h3>Merge Preview</h3>
+        <div id="preview-loading" class="status-msg">Generating merge preview...</div>
+
+        <div id="preview-results" style="display:none;">
+            <div id="preview-chains"></div>
+
+            <div style="margin-top:16px; display:flex; gap:12px;">
+                <button class="btn-secondary btn" onclick="goToStep(3)">Back</button>
+                <button class="btn btn-run" onclick="commitImport()">Commit Import</button>
+            </div>
+        </div>
+        <div id="preview-status" class="status-msg"></div>
+    </div>
+
+    <!-- Step 5: Results -->
+    <div class="panel wizard-panel" id="step-5" style="display:none;">
+        <h3>Import Complete</h3>
+        <div id="commit-loading" class="status-msg">Writing merged data...</div>
+
+        <div id="commit-results" style="display:none;">
+            <div id="commit-summary"></div>
+            <div id="commit-details" style="margin-top:16px;"></div>
+            <div style="margin-top:16px;">
+                <button class="btn" onclick="resetWizard()">Start New Import</button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+(function() {
+    // ── State ──
+    let sessionId = null;
+    let currentStep = 1;
+    let autoMappings = [];
+    const canonicalColumns = {{ canonical_columns | tojson }};
+
+    // ── Navigation ──
+
+    function goToStep(step) {
+        document.querySelectorAll('.wizard-panel').forEach(p => p.style.display = 'none');
+        document.getElementById('step-' + step).style.display = 'block';
+
+        document.querySelectorAll('.wizard-step').forEach(s => {
+            const sn = parseInt(s.dataset.step);
+            s.classList.remove('active', 'completed');
+            if (sn < step) s.classList.add('completed');
+            if (sn === step) s.classList.add('active');
+        });
+        currentStep = step;
+
+        // Auto-trigger actions on entering certain steps
+        if (step === 2 && sessionId && !autoMappings.length) loadAutoMapping();
+        if (step === 3 && sessionId) runAnalysis();
+    }
+    window.goToStep = goToStep;
+
+    // ── Step 1: Parse ──
+
+    function switchInputTab(tab) {
+        document.querySelectorAll('.import-tab').forEach(t => t.classList.remove('active'));
+        document.querySelectorAll('.import-tab-content').forEach(t => {
+            t.style.display = 'none';
+            t.classList.remove('active');
+        });
+        document.getElementById('tab-' + tab).style.display = 'block';
+        document.getElementById('tab-' + tab).classList.add('active');
+        event.target.classList.add('active');
+    }
+    window.switchInputTab = switchInputTab;
+
+    async function parseFile() {
+        const fileInput = document.getElementById('import-file');
+        if (!fileInput.files.length) {
+            showStatus('parse-status', 'Please select a file.', 'error');
+            return;
+        }
+        const form = new FormData();
+        form.append('file', fileInput.files[0]);
+        showStatus('parse-status', 'Parsing...', '');
+        await doParse(form, false);
+    }
+    window.parseFile = parseFile;
+
+    async function parsePaste() {
+        const text = document.getElementById('import-paste').value.trim();
+        if (!text) {
+            showStatus('parse-status', 'Please paste some data.', 'error');
+            return;
+        }
+        showStatus('parse-status', 'Parsing...', '');
+        await doParse(JSON.stringify({ text }), true);
+    }
+    window.parsePaste = parsePaste;
+
+    async function doParse(body, isJson) {
+        try {
+            const opts = { method: 'POST', body };
+            if (isJson) opts.headers = { 'Content-Type': 'application/json' };
+            const res = await fetch('/api/import/parse', opts);
+            const data = await res.json();
+            if (!res.ok) { showStatus('parse-status', data.error, 'error'); return; }
+
+            sessionId = data.session_id;
+            autoMappings = [];
+
+            // Update stats
+            document.getElementById('stat-rows').textContent = data.row_count;
+            document.getElementById('stat-cols').textContent = data.column_count;
+            document.getElementById('stat-ecosystems').textContent = Object.keys(data.ecosystem_counts).filter(k => k).length;
+
+            // Ecosystem breakdown
+            const ecoDiv = document.getElementById('ecosystem-breakdown');
+            const ecoEntries = Object.entries(data.ecosystem_counts).filter(([k]) => k).sort((a,b) => b[1] - a[1]);
+            if (ecoEntries.length) {
+                ecoDiv.innerHTML = '<h3>Ecosystems Detected</h3><table class="detail-table">' +
+                    ecoEntries.map(([name, count]) =>
+                        `<tr><td>${esc(name)}</td><td class="num">${count}</td></tr>`
+                    ).join('') + '</table>';
+                ecoDiv.style.display = 'block';
+            } else {
+                ecoDiv.innerHTML = '<p style="color:var(--warning); font-size:13px;">No Ecosystem column detected. All rows will need manual chain assignment.</p>';
+                ecoDiv.style.display = 'block';
+            }
+
+            // Sample table
+            if (data.sample_rows && data.sample_rows.length) {
+                const cols = data.columns;
+                document.getElementById('sample-thead').innerHTML =
+                    '<tr>' + cols.map(c => `<th>${esc(c)}</th>`).join('') + '</tr>';
+                document.getElementById('sample-tbody').innerHTML =
+                    data.sample_rows.map(row =>
+                        '<tr>' + cols.map(c => `<td>${esc(row[c] || '')}</td>`).join('') + '</tr>'
+                    ).join('');
+            }
+
+            document.getElementById('parse-results').style.display = 'block';
+            showStatus('parse-status', `Parsed ${data.row_count} rows with ${data.column_count} columns.`, 'success');
+        } catch(e) {
+            showStatus('parse-status', 'Parse failed: ' + e.message, 'error');
+        }
+    }
+
+    // ── Step 2: Column Mapping ──
+
+    async function loadAutoMapping() {
+        document.getElementById('mapping-loading').style.display = 'block';
+        document.getElementById('mapping-table-wrap').style.display = 'none';
+
+        try {
+            const res = await fetch('/api/import/map', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ session_id: sessionId })
+            });
+            const data = await res.json();
+            if (!res.ok) { showStatus('map-status', data.error, 'error'); return; }
+
+            autoMappings = data.mappings;
+            renderMappingTable(data.mappings, data.computed_columns || []);
+
+            document.getElementById('mapping-loading').style.display = 'none';
+            document.getElementById('mapping-table-wrap').style.display = 'block';
+        } catch(e) {
+            showStatus('map-status', 'Failed to load mappings: ' + e.message, 'error');
+        }
+    }
+
+    function renderMappingTable(mappings, computedCols) {
+        const tbody = document.getElementById('mapping-tbody');
+        const options = ['__skip__', ...canonicalColumns];
+
+        tbody.innerHTML = mappings.map((m, i) => {
+            const rowClass = m.type === 'matched' ? 'mapping-matched' :
+                             m.type === 'suggested' ? 'mapping-suggested' :
+                             m.type === 'extra' ? 'mapping-extra' : 'mapping-unmapped';
+            const isComputed = computedCols.includes(m.incoming);
+
+            return `<tr class="${rowClass}">
+                <td>
+                    ${esc(m.incoming)}
+                    ${isComputed ? ' <span class="badge" style="background:#fff3cd;color:#856404;">computed</span>' : ''}
+                </td>
+                <td style="text-align:center; color:var(--text-muted);">→</td>
+                <td>
+                    <select class="mapping-select" data-incoming="${esc(m.incoming)}" data-index="${i}">
+                        ${options.map(o => `<option value="${o}" ${(m.mapped_to || '__skip__') === o ? 'selected' : ''}>${o === '__skip__' ? '(skip)' : o}</option>`).join('')}
+                    </select>
+                </td>
+                <td>
+                    <span class="badge ${m.type === 'matched' ? 'stable' : m.type === 'suggested' ? 'usdt' : m.type === 'extra' ? 'web3' : ''}"
+                          style="${m.type === 'unmapped' ? 'background:#f8d7da;color:#721c24;' : ''}">
+                        ${m.confidence || m.type}
+                    </span>
+                </td>
+            </tr>`;
+        }).join('');
+
+        // Computed columns notice
+        if (computedCols.length) {
+            document.getElementById('computed-notice').style.display = 'block';
+            document.getElementById('computed-list').textContent = computedCols.join(', ');
+        }
+    }
+
+    async function confirmMapping() {
+        // Gather user mappings from dropdowns
+        const selects = document.querySelectorAll('.mapping-select');
+        const mappings = {};
+        selects.forEach(sel => {
+            mappings[sel.dataset.incoming] = sel.value;
+        });
+
+        showStatus('map-status', 'Applying column mapping...', '');
+        try {
+            const res = await fetch('/api/import/map', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ session_id: sessionId, mappings, confirm: true })
+            });
+            const data = await res.json();
+            if (!res.ok) { showStatus('map-status', data.error, 'error'); return; }
+
+            showStatus('map-status', `Mapped ${data.mapped_row_count} rows.`, 'success');
+            goToStep(3);
+        } catch(e) {
+            showStatus('map-status', 'Mapping failed: ' + e.message, 'error');
+        }
+    }
+    window.confirmMapping = confirmMapping;
+
+    // ── Step 3: Analyze ──
+
+    async function runAnalysis() {
+        document.getElementById('analyze-loading').style.display = 'block';
+        document.getElementById('analyze-results').style.display = 'none';
+
+        try {
+            const res = await fetch('/api/import/analyze', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ session_id: sessionId })
+            });
+            const data = await res.json();
+            if (!res.ok) {
+                document.getElementById('analyze-loading').textContent = data.error;
+                document.getElementById('analyze-loading').className = 'status-msg error';
+                return;
+            }
+
+            // Stats
+            document.getElementById('analyze-total').textContent = data.totals.total_rows;
+            document.getElementById('analyze-new').textContent = data.totals.new;
+            document.getElementById('analyze-dupes').textContent = data.totals.duplicates;
+            document.getElementById('analyze-unmatched').textContent = data.totals.unmatched;
+
+            // Ecosystem table
+            const tbody = document.getElementById('ecosystem-tbody');
+            tbody.innerHTML = data.ecosystems.map(e => {
+                const statusBadge = e.is_known_chain
+                    ? (e.has_existing_csv
+                        ? '<span class="badge stable">has data</span>'
+                        : '<span class="badge web3">new chain</span>')
+                    : '<span class="badge" style="background:#f8d7da;color:#721c24;">unknown</span>';
+                return `<tr>
+                    <td><strong>${esc(e.chain_name)}</strong></td>
+                    <td class="num">${e.total_incoming}</td>
+                    <td class="num">${e.existing_row_count}</td>
+                    <td class="num" style="color:var(--success);">${e.new_rows}</td>
+                    <td class="num" style="color:var(--warning);">${e.duplicate_rows}</td>
+                    <td>${statusBadge}</td>
+                </tr>`;
+            }).join('');
+
+            // Unmatched warning
+            if (data.unmatched_ecosystems && data.unmatched_ecosystems.length) {
+                document.getElementById('unmatched-warning').style.display = 'block';
+                document.getElementById('unmatched-list').textContent = data.unmatched_ecosystems.join(', ');
+            } else {
+                document.getElementById('unmatched-warning').style.display = 'none';
+            }
+
+            document.getElementById('analyze-loading').style.display = 'none';
+            document.getElementById('analyze-results').style.display = 'block';
+        } catch(e) {
+            document.getElementById('analyze-loading').textContent = 'Analysis failed: ' + e.message;
+            document.getElementById('analyze-loading').className = 'status-msg error';
+        }
+    }
+
+    // ── Step 4: Preview ──
+
+    async function generatePreview() {
+        goToStep(4);
+        document.getElementById('preview-loading').style.display = 'block';
+        document.getElementById('preview-results').style.display = 'none';
+
+        // Collect any strategy overrides from previous preview
+        const strategies = collectStrategies();
+
+        try {
+            const res = await fetch('/api/import/preview', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ session_id: sessionId, strategies })
+            });
+            const data = await res.json();
+            if (!res.ok) {
+                showStatus('preview-status', data.error, 'error');
+                document.getElementById('preview-loading').style.display = 'none';
+                return;
+            }
+
+            renderPreview(data.chains);
+            document.getElementById('preview-loading').style.display = 'none';
+            document.getElementById('preview-results').style.display = 'block';
+        } catch(e) {
+            showStatus('preview-status', 'Preview failed: ' + e.message, 'error');
+            document.getElementById('preview-loading').style.display = 'none';
+        }
+    }
+    window.generatePreview = generatePreview;
+
+    function renderPreview(chains) {
+        const container = document.getElementById('preview-chains');
+        container.innerHTML = chains.map(chain => {
+            const diffRows = (chain.diffs || []).map(d => {
+                const conflictRows = d.conflicts.map(c => `
+                    <tr class="diff-row">
+                        <td style="font-weight:600;">${esc(c.column)}</td>
+                        <td class="diff-ours">${esc(c.ours || '(empty)')}</td>
+                        <td class="diff-theirs">${esc(c.theirs || '(empty)')}</td>
+                        <td>
+                            <select class="strategy-select" data-chain="${chain.chain}" data-col="${esc(c.column)}">
+                                <option value="append" ${c.strategy === 'append' ? 'selected' : ''}>Append (;)</option>
+                                <option value="keep_ours" ${c.strategy === 'keep_ours' ? 'selected' : ''}>Keep Ours</option>
+                                <option value="keep_theirs" ${c.strategy === 'keep_theirs' ? 'selected' : ''}>Keep Theirs</option>
+                                <option value="skip" ${c.strategy === 'skip' ? 'selected' : ''}>Skip</option>
+                            </select>
+                        </td>
+                        <td class="diff-resolved">${esc(c.resolved || '')}</td>
+                    </tr>
+                `).join('');
+
+                return `<details class="diff-item">
+                    <summary>
+                        <strong>${esc(d.project_name)}</strong>
+                        <span class="badge ${d.match_score >= 1.0 ? 'stable' : 'usdt'}">${d.match_method} (${Math.round(d.match_score * 100)}%)</span>
+                        <span style="color:var(--text-muted); font-size:12px;">${d.conflicts.length} conflict(s)</span>
+                    </summary>
+                    <div class="table-container" style="margin-top:8px;">
+                        <table class="project-table diff-table">
+                            <thead><tr>
+                                <th>Column</th><th>Ours</th><th>Theirs</th><th>Strategy</th><th>Resolved</th>
+                            </tr></thead>
+                            <tbody>${conflictRows}</tbody>
+                        </table>
+                    </div>
+                </details>`;
+            }).join('');
+
+            const newColsNote = chain.new_columns && chain.new_columns.length
+                ? `<p style="font-size:12px; color:var(--accent); margin-top:8px;">New columns to add: <strong>${chain.new_columns.join(', ')}</strong></p>`
+                : '';
+
+            return `<div class="panel" style="border-left:4px solid var(--primary);">
+                <h3 style="display:flex; justify-content:space-between; align-items:center;">
+                    ${esc(chain.chain)}
+                    <span style="font-size:12px; font-weight:normal; color:var(--text-muted);">
+                        +${chain.new_count} new, ${chain.merge_count} merge, ${chain.skip_count} skip
+                    </span>
+                </h3>
+                ${diffRows || '<p style="font-size:13px; color:var(--text-muted);">No conflicts — all rows are new.</p>'}
+                ${newColsNote}
+            </div>`;
+        }).join('');
+    }
+
+    function collectStrategies() {
+        const strategies = {};
+        document.querySelectorAll('.strategy-select').forEach(sel => {
+            const chain = sel.dataset.chain;
+            const col = sel.dataset.col;
+            if (!strategies[chain]) strategies[chain] = {};
+            strategies[chain][col] = sel.value;
+        });
+        return strategies;
+    }
+
+    // ── Step 5: Commit ──
+
+    async function commitImport() {
+        goToStep(5);
+        document.getElementById('commit-loading').style.display = 'block';
+        document.getElementById('commit-results').style.display = 'none';
+
+        try {
+            const res = await fetch('/api/import/commit', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ session_id: sessionId })
+            });
+            const data = await res.json();
+            if (!res.ok) {
+                document.getElementById('commit-loading').textContent = data.error;
+                document.getElementById('commit-loading').className = 'status-msg error';
+                return;
+            }
+
+            // Summary
+            const s = data.summary;
+            document.getElementById('commit-summary').innerHTML = `
+                <div class="pipeline-summary summary-success">
+                    Import complete: ${s.chains_affected} chain(s) updated,
+                    ${s.total_added} rows added, ${s.total_updated} rows merged.
+                </div>`;
+
+            // Per-chain details
+            document.getElementById('commit-details').innerHTML =
+                data.results.map(r => {
+                    if (r.error) {
+                        return `<div class="pipeline-summary summary-failed">
+                            ${esc(r.chain)}: Error — ${esc(r.error)}
+                        </div>`;
+                    }
+                    return `<div class="detail-card" style="margin-bottom:8px;">
+                        <h3>${esc(r.chain)}</h3>
+                        <table class="detail-table">
+                            <tr><td>Rows added</td><td class="num">${r.rows_added}</td></tr>
+                            <tr><td>Rows merged</td><td class="num">${r.rows_updated}</td></tr>
+                            <tr><td>Rows skipped</td><td class="num">${r.rows_skipped}</td></tr>
+                            <tr><td>Total after</td><td class="num">${r.total_rows_after}</td></tr>
+                            ${r.backup_path ? `<tr><td>Backup</td><td style="font-size:11px; color:var(--text-muted);">${esc(r.backup_path)}</td></tr>` : ''}
+                        </table>
+                        <a href="/api/download/${r.chain}" class="btn btn-secondary" style="margin-top:8px; font-size:12px;">Download CSV</a>
+                    </div>`;
+                }).join('');
+
+            document.getElementById('commit-loading').style.display = 'none';
+            document.getElementById('commit-results').style.display = 'block';
+        } catch(e) {
+            document.getElementById('commit-loading').textContent = 'Commit failed: ' + e.message;
+            document.getElementById('commit-loading').className = 'status-msg error';
+        }
+    }
+    window.commitImport = commitImport;
+
+    function resetWizard() {
+        sessionId = null;
+        autoMappings = [];
+        document.getElementById('parse-results').style.display = 'none';
+        document.getElementById('import-file').value = '';
+        document.getElementById('import-paste').value = '';
+        goToStep(1);
+    }
+    window.resetWizard = resetWizard;
+
+    // ── Helpers ──
+
+    function showStatus(id, msg, type) {
+        const el = document.getElementById(id);
+        el.textContent = msg;
+        el.className = 'status-msg' + (type ? ' ' + type : '');
+    }
+
+    function esc(str) {
+        if (!str) return '';
+        const d = document.createElement('div');
+        d.textContent = String(str);
+        return d.innerHTML;
+    }
+})();
+</script>
+{% endblock %}

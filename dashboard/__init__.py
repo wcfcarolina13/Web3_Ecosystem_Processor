@@ -19,4 +19,7 @@ def create_app(default_chain=None):
     from .pipeline_api import pipeline_bp
     app.register_blueprint(pipeline_bp)
 
+    from .import_api import import_bp
+    app.register_blueprint(import_bp)
+
     return app

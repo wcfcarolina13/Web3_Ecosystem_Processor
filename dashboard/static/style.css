@@ -1034,3 +1034,188 @@ footer code {
     padding: 2px 6px;
     animation: pulse 2s ease-in-out infinite;
 }
+
+/* ── Import Wizard ── */
+.wizard-steps {
+    display: flex;
+    gap: 4px;
+    margin-bottom: 20px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 12px 16px;
+    box-shadow: var(--shadow);
+}
+
+.wizard-step {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 6px 16px;
+    border-radius: var(--radius);
+    font-size: 13px;
+    color: var(--text-muted);
+    flex: 1;
+    transition: all 0.2s;
+}
+
+.wizard-step.active {
+    background: #eef3ff;
+    color: var(--primary);
+    font-weight: 600;
+}
+
+.wizard-step.completed {
+    color: var(--success);
+}
+
+.wizard-num {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    border: 2px solid currentColor;
+    font-size: 12px;
+    font-weight: 700;
+    flex-shrink: 0;
+}
+
+.wizard-step.completed .wizard-num {
+    background: var(--success);
+    color: white;
+    border-color: var(--success);
+}
+
+.wizard-step.active .wizard-num {
+    background: var(--primary);
+    color: white;
+    border-color: var(--primary);
+}
+
+.wizard-label {
+    white-space: nowrap;
+}
+
+/* Import input tabs */
+.import-tabs {
+    display: flex;
+    gap: 4px;
+    margin-bottom: 16px;
+}
+
+.import-tab {
+    padding: 6px 16px;
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    background: transparent;
+    color: var(--text-muted);
+    font-size: 13px;
+    cursor: pointer;
+    transition: all 0.15s;
+}
+
+.import-tab.active {
+    background: var(--primary);
+    color: white;
+    border-color: var(--primary);
+}
+
+.import-textarea {
+    width: 100%;
+    padding: 10px 12px;
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    font-family: 'SF Mono', 'Fira Code', monospace;
+    font-size: 12px;
+    background: var(--bg);
+    resize: vertical;
+}
+
+/* Column mapping rows */
+.mapping-matched {
+    background: #f0faf0;
+}
+
+.mapping-suggested {
+    background: #fffbe6;
+}
+
+.mapping-unmapped {
+    background: #fff5f5;
+}
+
+.mapping-extra {
+    background: #eef6ff;
+}
+
+.mapping-select {
+    padding: 4px 8px;
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    font-size: 12px;
+    background: white;
+    min-width: 200px;
+}
+
+/* Diff items */
+.diff-item {
+    margin-bottom: 8px;
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    overflow: hidden;
+}
+
+.diff-item summary {
+    padding: 10px 14px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 13px;
+    background: var(--bg);
+}
+
+.diff-item summary:hover {
+    background: #eef3ff;
+}
+
+.diff-table .diff-ours {
+    background: #fff5f5;
+    max-width: 200px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.diff-table .diff-theirs {
+    background: #f0faf0;
+    max-width: 200px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.diff-table .diff-resolved {
+    background: #eef3ff;
+    font-weight: 500;
+    max-width: 250px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.strategy-select {
+    padding: 3px 6px;
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    font-size: 11px;
+    background: white;
+}
+
+@media (max-width: 768px) {
+    .wizard-steps {
+        flex-direction: column;
+    }
+    .wizard-label {
+        display: none;
+    }
+}
