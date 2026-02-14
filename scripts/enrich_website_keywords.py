@@ -26,7 +26,7 @@ import urllib.error
 from html import unescape as html_unescape
 from pathlib import Path
 from typing import Dict, List, Optional, Set, Tuple
-from urllib.parse import urlparse
+from urllib.parse import urlparse, urljoin
 
 # Add project root to path
 sys.path.insert(0, str(Path(__file__).parent.parent))
@@ -105,6 +105,21 @@ MAX_HTML_BYTES = 500_000  # 500KB — plenty for keyword detection
 # Incremental skip marker
 SCAN_MARKER = "website-scan"
 
+# ── Subpage crawling ────────────────────────────────────────────────────
+
+# Common subpaths to try on every site (order = priority)
+DEFAULT_SUBPATHS = [
+    "/about", "/features", "/products", "/services",
+    "/faq", "/docs", "/developers", "/about-us", "/how-it-works",
+]
+
+DEFAULT_MAX_SUBPAGES = 5   # Max subpages per site (homepage doesn't count)
+DEFAULT_CRAWL_MODE = "both"  # "homepage" | "fixed" | "links" | "both"
+MAX_EXTRACTED_LINKS = 20   # Max same-domain links to extract from homepage
+
+# Regex to detect the crawled(N) marker variant
+SCAN_MARKER_CRAWLED_RE = re.compile(r"website-scan: crawled\(\d+\)")
+
 
 # ── URL validation ───────────────────────────────────────────────────────
 
@@ -137,6 +152,71 @@ def normalize_url_for_fetch(url: str) -> str:
     if not url.startswith(("http://", "https://")):
         url = "https://" + url
     return url
+
+
+# ── Link extraction ─────────────────────────────────────────────────────
+
+# Static asset extensions to skip when extracting links
+_SKIP_EXTENSIONS = frozenset({
+    ".css", ".js", ".png", ".jpg", ".jpeg", ".gif", ".svg",
+    ".ico", ".woff", ".woff2", ".ttf", ".eot", ".pdf", ".zip",
+    ".mp4", ".webm", ".mp3", ".xml", ".json", ".rss",
+})
+
+_HREF_RE = re.compile(r'href=["\']([^"\']+)["\']', re.IGNORECASE)
+
+
+def extract_same_domain_links(
+    html: str, base_url: str, max_links: int = MAX_EXTRACTED_LINKS,
+) -> List[str]:
+    """
+    Extract unique same-domain links from HTML using regex.
+
+    Returns absolute URLs on the same domain as base_url.
+    Excludes fragment-only links, static assets, mailto/tel, and the homepage itself.
+    """
+    parsed_base = urlparse(base_url)
+    base_domain = (parsed_base.hostname or "").lower()
+    base_path = parsed_base.path.rstrip("/").lower() or "/"
+
+    seen_paths: Set[str] = set()
+    results: List[str] = []
+
+    for match in _HREF_RE.finditer(html):
+        href = match.group(1).strip()
+
+        # Skip fragments, mailto, tel, javascript
+        if href.startswith(("#", "mailto:", "tel:", "javascript:")):
+            continue
+
+        # Resolve relative URLs
+        absolute = urljoin(base_url, href)
+        parsed = urlparse(absolute)
+
+        # Same domain only
+        if (parsed.hostname or "").lower() != base_domain:
+            continue
+
+        # Skip static assets
+        path_lower = parsed.path.lower()
+        if any(path_lower.endswith(ext) for ext in _SKIP_EXTENSIONS):
+            continue
+
+        # Normalize: strip fragment and query, keep scheme + host + path
+        clean_path = path_lower.rstrip("/") or "/"
+        clean_url = f"{parsed.scheme}://{parsed.hostname}{parsed.path}"
+
+        # Skip homepage itself
+        if clean_path == base_path:
+            continue
+
+        if clean_path not in seen_paths:
+            seen_paths.add(clean_path)
+            results.append(clean_url)
+            if len(results) >= max_links:
+                break
+
+    return results
 
 
 # ── HTML fetching ────────────────────────────────────────────────────────
@@ -202,6 +282,90 @@ def html_to_text(html: str) -> str:
     # Collapse whitespace
     text = re.sub(r"\s+", " ", text).strip()
     return text.lower()
+
+
+# ── Site crawling ───────────────────────────────────────────────────────
+
+def crawl_site(
+    homepage_url: str,
+    crawl_mode: str = DEFAULT_CRAWL_MODE,
+    max_subpages: int = DEFAULT_MAX_SUBPAGES,
+) -> Tuple[Optional[str], int, int]:
+    """
+    Crawl a site's homepage and subpages, returning aggregated text.
+
+    Args:
+        homepage_url: The project's main website URL.
+        crawl_mode: "homepage", "fixed", "links", or "both".
+        max_subpages: Maximum number of subpages to fetch beyond homepage.
+
+    Returns:
+        (aggregated_text, pages_fetched, pages_failed)
+        aggregated_text is None if even the homepage fails.
+    """
+    homepage_url = normalize_url_for_fetch(homepage_url)
+    pages_fetched = 0
+    pages_failed = 0
+    all_texts: List[str] = []
+
+    # ── Step 1: Fetch homepage ──
+    homepage_html = fetch_html(homepage_url)
+    if not homepage_html:
+        return None, 0, 1
+
+    pages_fetched += 1
+    homepage_text = html_to_text(homepage_html)
+    if len(homepage_text) >= 50:
+        all_texts.append(homepage_text)
+
+    # If homepage-only mode, return immediately
+    if crawl_mode == "homepage" or max_subpages <= 0:
+        combined = " ".join(all_texts) if all_texts else None
+        return combined, pages_fetched, pages_failed
+
+    # ── Step 2: Build candidate subpage URLs ──
+    candidate_urls: List[str] = []
+
+    # Fixed common paths
+    if crawl_mode in ("fixed", "both"):
+        for subpath in DEFAULT_SUBPATHS:
+            candidate_urls.append(urljoin(homepage_url, subpath))
+
+    # Links extracted from homepage HTML
+    if crawl_mode in ("links", "both"):
+        extracted = extract_same_domain_links(homepage_html, homepage_url)
+        for link_url in extracted:
+            if link_url not in candidate_urls:
+                candidate_urls.append(link_url)
+
+    # Deduplicate by normalized path and cap at max_subpages
+    seen_paths: Set[str] = set()
+    unique_candidates: List[str] = []
+    for url in candidate_urls:
+        parsed = urlparse(url)
+        path_key = (parsed.path or "/").rstrip("/").lower()
+        if path_key and path_key != "/" and path_key not in seen_paths:
+            seen_paths.add(path_key)
+            unique_candidates.append(url)
+
+    unique_candidates = unique_candidates[:max_subpages]
+
+    # ── Step 3: Fetch subpages ──
+    for subpage_url in unique_candidates:
+        time.sleep(REQUEST_DELAY)  # Rate limiting between ALL requests
+
+        sub_html = fetch_html(subpage_url)
+        if not sub_html:
+            pages_failed += 1
+            continue
+
+        pages_fetched += 1
+        sub_text = html_to_text(sub_html)
+        if len(sub_text) >= 50:
+            all_texts.append(sub_text)
+
+    combined = " ".join(all_texts) if all_texts else None
+    return combined, pages_fetched, pages_failed
 
 
 # ── Keyword matching ─────────────────────────────────────────────────────
@@ -330,10 +494,16 @@ def format_scan_note(scan_result: Dict) -> str:
 
 # ── Row eligibility ──────────────────────────────────────────────────────
 
-def should_scan_row(row: Dict) -> bool:
+def should_scan_row(row: Dict, rescan_homepage_only: bool = False) -> bool:
     """
     Check if a row should be scanned.
     Only scan rows that have websites but NO enrichment from other sources.
+
+    Args:
+        rescan_homepage_only: If True, rows previously scanned homepage-only
+            (marker "website-scan: scanned") become eligible for re-scanning
+            with subpage crawling. Rows marked "website-scan: crawled(N)"
+            are still skipped.
     """
     # Must have a website
     website = row.get("Website", "").strip()
@@ -343,7 +513,13 @@ def should_scan_row(row: Dict) -> bool:
     # Skip if already scanned (incremental)
     evidence = row.get("Evidence & Source URLs", "")
     if SCAN_MARKER in evidence:
-        return False
+        if rescan_homepage_only:
+            # Re-scan only if it was homepage-only ("scanned"), not "crawled(N)"
+            if SCAN_MARKER_CRAWLED_RE.search(evidence):
+                return False  # Already crawled with subpages — skip
+            # "website-scan: scanned" → eligible for re-scan, fall through
+        else:
+            return False
 
     # Skip if already enriched by stronger sources
     # (Grid, DefiLlama, CoinGecko put their markers in Evidence)
@@ -366,9 +542,17 @@ def enrich_csv(
     target_assets: List[str],
     dry_run: bool = False,
     limit: int = 0,
+    crawl_mode: str = DEFAULT_CRAWL_MODE,
+    max_subpages: int = DEFAULT_MAX_SUBPAGES,
+    rescan_homepage_only: bool = False,
 ) -> Tuple[int, int, int, int]:
     """
     Enrich CSV with website keyword scan results.
+
+    Args:
+        crawl_mode: Subpage crawling strategy ("homepage", "fixed", "links", "both").
+        max_subpages: Maximum subpages to fetch per site (beyond homepage).
+        rescan_homepage_only: Re-scan rows that were only homepage-scanned previously.
 
     Returns (total_rows, scanned, keywords_found, fetch_errors).
     """
@@ -377,6 +561,7 @@ def enrich_csv(
     total = len(rows)
     print(f"  {total} rows loaded")
     print(f"  Target assets: {', '.join(target_assets)}")
+    print(f"  Crawl mode: {crawl_mode} (max {max_subpages} subpages)")
 
     # Load dynamic stablecoin catalog (beyond USDT/USDC)
     dynamic_stablecoins = load_dynamic_stablecoins()
@@ -386,7 +571,8 @@ def enrich_csv(
         print(f"  Dynamic stablecoin catalog: not available (scanning USDT/USDC only)")
 
     # Count eligible rows
-    eligible = [i for i, r in enumerate(rows) if should_scan_row(r)]
+    eligible = [i for i, r in enumerate(rows)
+                if should_scan_row(r, rescan_homepage_only=rescan_homepage_only)]
     if limit > 0:
         eligible = eligible[:limit]
     print(f"  {len(eligible)} rows eligible for website scan")
@@ -397,6 +583,9 @@ def enrich_csv(
     skipped_incremental = sum(
         1 for r in rows
         if SCAN_MARKER in r.get("Evidence & Source URLs", "")
+        and not (rescan_homepage_only
+                 and f"{SCAN_MARKER}: scanned" in r.get("Evidence & Source URLs", "")
+                 and not SCAN_MARKER_CRAWLED_RE.search(r.get("Evidence & Source URLs", "")))
     )
     if skipped_incremental:
         print(f"  {skipped_incremental} rows skipped (already scanned)")
@@ -408,32 +597,31 @@ def enrich_csv(
 
         print(f"  [{idx_num + 1}/{len(eligible)}] {name} → {website}", end="", flush=True)
 
-        # Rate limiting
+        # Rate limiting (between sites; crawl_site handles inter-page delays)
         if scanned > 0:
             time.sleep(REQUEST_DELAY)
 
-        # Fetch HTML
-        html = fetch_html(website)
+        # Crawl site (homepage + subpages)
+        text, pages_fetched, pages_failed = crawl_site(
+            website, crawl_mode=crawl_mode, max_subpages=max_subpages,
+        )
         scanned += 1
 
-        if not html:
+        if text is None:
             print(" ✗ fetch failed")
             fetch_errors += 1
             # Still mark as scanned to avoid re-trying dead sites
             if not dry_run:
-                _add_scan_marker(row)
+                _add_scan_marker(row, pages_fetched=0)
             continue
-
-        # Extract text and scan
-        text = html_to_text(html)
 
         if len(text) < 50:
             print(" ✗ too little text")
             if not dry_run:
-                _add_scan_marker(row)
+                _add_scan_marker(row, pages_fetched=pages_fetched)
             continue
 
-        # Scan for keywords
+        # Scan aggregated text for keywords
         result = scan_keywords(text, target_assets, dynamic_stablecoins=dynamic_stablecoins)
         note_text = format_scan_note(result)
 
@@ -450,22 +638,29 @@ def enrich_csv(
             detail = asset_list
             if extras:
                 detail += (" + " if detail else "") + ", ".join(extras)
-            print(f" ✓ {detail}")
+            page_info = f" [{pages_fetched}pg]" if pages_fetched > 1 else ""
+            print(f" ✓ {detail}{page_info}")
 
-            # Update Notes (append)
+            # Update Notes (append, remove old scan note on re-scan)
             if not dry_run:
                 existing_notes = row.get("Notes", "").strip()
+                # On re-scan, remove old website-scan note to avoid duplicates
+                if rescan_homepage_only and "[UNVERIFIED website-scan]" in existing_notes:
+                    parts = existing_notes.split(" | ")
+                    parts = [p for p in parts if "[UNVERIFIED website-scan]" not in p]
+                    existing_notes = " | ".join(p for p in parts if p.strip())
                 if existing_notes:
                     if note_text not in existing_notes:
                         row["Notes"] = f"{existing_notes} | {note_text}"
                 else:
                     row["Notes"] = note_text
         else:
-            print(" · no keywords")
+            page_info = f" [{pages_fetched}pg]" if pages_fetched > 1 else ""
+            print(f" · no keywords{page_info}")
 
         # Mark as scanned (regardless of findings)
         if not dry_run:
-            _add_scan_marker(row)
+            _add_scan_marker(row, pages_fetched=pages_fetched)
 
     # Write CSV
     if not dry_run and scanned > 0:
@@ -475,15 +670,32 @@ def enrich_csv(
     return total, scanned, keywords_found, fetch_errors
 
 
-def _add_scan_marker(row: Dict) -> None:
-    """Add the website-scan marker to Evidence for incremental skip."""
+def _add_scan_marker(row: Dict, pages_fetched: int = 1) -> None:
+    """
+    Add the website-scan marker to Evidence for incremental skip.
+
+    Args:
+        pages_fetched: Number of pages fetched (1 = homepage only).
+            1 -> "website-scan: scanned" (backward compat with old runs)
+            >1 -> "website-scan: crawled(N)"
+    """
     evidence = row.get("Evidence & Source URLs", "").strip()
-    marker = f"{SCAN_MARKER}: scanned"
-    if marker not in evidence:
-        if evidence:
-            row["Evidence & Source URLs"] = f"{evidence} | {marker}"
-        else:
-            row["Evidence & Source URLs"] = marker
+
+    # Remove any existing scan markers first (supports re-scan)
+    if SCAN_MARKER in evidence:
+        parts = [p.strip() for p in evidence.split("|")]
+        parts = [p for p in parts if not p.startswith(SCAN_MARKER)]
+        evidence = " | ".join(p for p in parts if p)
+
+    if pages_fetched <= 1:
+        marker = f"{SCAN_MARKER}: scanned"
+    else:
+        marker = f"{SCAN_MARKER}: crawled({pages_fetched})"
+
+    if evidence:
+        row["Evidence & Source URLs"] = f"{evidence} | {marker}"
+    else:
+        row["Evidence & Source URLs"] = marker
 
 
 # ── CLI ──────────────────────────────────────────────────────────────────
@@ -514,7 +726,20 @@ def main():
                         help="Override target assets (comma-separated)")
     parser.add_argument("--refresh-catalog", action="store_true",
                         help="Force refresh stablecoin catalog from CoinGecko before scanning")
+    parser.add_argument("--crawl-mode",
+                        choices=["homepage", "fixed", "links", "both"],
+                        default=DEFAULT_CRAWL_MODE,
+                        help=f"Subpage crawling strategy (default: {DEFAULT_CRAWL_MODE})")
+    parser.add_argument("--max-subpages", type=int, default=DEFAULT_MAX_SUBPAGES,
+                        help=f"Max subpages per site (default: {DEFAULT_MAX_SUBPAGES})")
+    parser.add_argument("--no-subpages", action="store_true",
+                        help="Shortcut for --crawl-mode homepage (disable subpage crawling)")
+    parser.add_argument("--rescan-homepage-only", action="store_true",
+                        help="Re-scan rows that were only homepage-scanned in a previous run")
     args = parser.parse_args()
+
+    # Resolve crawl mode
+    crawl_mode = "homepage" if args.no_subpages else args.crawl_mode
 
     # Resolve CSV path
     if args.csv:
@@ -545,6 +770,8 @@ def main():
     total, scanned, found, errors = enrich_csv(
         csv_path, args.chain, target_assets,
         dry_run=args.dry_run, limit=args.limit,
+        crawl_mode=crawl_mode, max_subpages=args.max_subpages,
+        rescan_homepage_only=args.rescan_homepage_only,
     )
 
     print(f"\n{'='*60}")
@@ -556,6 +783,7 @@ def main():
     print(f"Fetch errors:     {errors}")
     hit_rate = f"{found/scanned*100:.1f}%" if scanned > 0 else "N/A"
     print(f"Hit rate:         {hit_rate}")
+    print(f"Crawl mode:       {crawl_mode} (max {args.max_subpages} subpages)")
 
     if args.dry_run:
         print(f"\n[DRY RUN] Re-run without --dry-run to write results.")
