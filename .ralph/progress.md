@@ -197,3 +197,26 @@ This is how Ralph maintains continuity across iterations.
 - `ee596f9` — feat: fix Grid enrichment compatibility with imported data + dynamic Projects table
 - `6b4ead8` — data: add imported ecosystem data (Kava, Liquid Network, Tezos, Polkadot, Kaia)
 
+### Session 12 — 2026-02-13 (Manual)
+
+**Accomplished:**
+- **View toggle fix**: Inactive button was missing `btn-secondary` class — both buttons rendered as identical filled blue. Added class + tooltips explaining each view.
+- **Boolean checkbox rendering**: Full view now renders boolean columns (9 cols) as green checkmarks (TRUE), muted dashes (FALSE), or empty (not evaluated) instead of raw text. Matches The Grid's checkbox style.
+- **USDC-only stablecoin bug**: `enrich_assets.py` incorrectly set "Suspect USDT = TRUE" when only USDC was found (used `has_any_stablecoin` which includes USDC). Fixed with three-way logic: USDT → suspect USDT, USDC-only → General Stablecoin (not USDT), neither → Web3.
+- **Explicit negative evidence**: Both `enrich_assets.py` and `promote_hints.py` now note "USDC support found, no evidence of USDT support" when USDC is detected without USDT.
+
+**Commits:**
+- `5c445ec` — fix: view toggle visibility, boolean checkboxes, USDC-only stablecoin bug
+
+### Session 13 — 2026-02-13 (Manual)
+
+**Accomplished:**
+- **Dynamic stablecoin catalog** (`build_stablecoin_catalog.py`): Fetches CoinGecko's stablecoins category (250 coins), filters by $1M market cap floor, excludes USDT/USDC (hardcoded), and caches 220 stablecoins to `config/stablecoin_catalog.json`. Auto-refreshes if >7 days stale.
+- **Website scanner expansion** (`enrich_website_keywords.py`): Now loads dynamic stablecoins from catalog and scans for DAI, TUSD, FRAX, PYUSD, and 200+ others alongside USDT/USDC. Dynamic stablecoins bypass the `target_assets` gate (always scanned). `--refresh-catalog` CLI flag forces re-fetch.
+- **Promotion logic** (`promote_hints.py`): Generalized `SCAN_PATTERNS` regex to handle any ticker. `parse_scan_note()` now detects `has_other_stablecoin` and `other_stablecoin_symbols`. Strategy 2 triggers on any stablecoin, producing notes like "DAI, PYUSD support found, no evidence of USDT support". Strategy 3 (web3-only) correctly blocks when dynamic stablecoins present.
+- **Pipeline integration** (`enrich_all.py`): `run_step_website()` auto-refreshes catalog before scanning.
+- **Key invariant preserved**: USDT remains a separate flag. Dynamic stablecoins feed ONLY into "General Stablecoin Adoption."
+
+**Commits:**
+- `3f6f1c2` — feat: dynamic CoinGecko stablecoin catalog for website keyword scanning
+
