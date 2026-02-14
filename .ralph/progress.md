@@ -220,3 +220,16 @@ This is how Ralph maintains continuity across iterations.
 **Commits:**
 - `3f6f1c2` — feat: dynamic CoinGecko stablecoin catalog for website keyword scanning
 
+### Session 14 — 2026-02-13 (Manual)
+
+**Accomplished:**
+- **Website subpage crawling** (`enrich_website_keywords.py`): Scanner now crawls homepage + up to 5 subpages per site. Hybrid discovery: fixed common paths (`/about`, `/features`, `/faq`, `/docs`, etc.) + same-domain links extracted from homepage HTML. Text from all pages aggregated before keyword scan.
+- **New functions**: `crawl_site()` orchestrates homepage + subpage fetching with rate limiting; `extract_same_domain_links()` regex-extracts same-domain links from raw HTML, filtering out static assets and external domains.
+- **Scan marker versioning**: Old `website-scan: scanned` (homepage-only) vs new `website-scan: crawled(N)` format. `_add_scan_marker()` supports both, removes old markers on re-scan.
+- **Re-scan support**: `--rescan-homepage-only` flag makes homepage-only scanned rows eligible for re-crawling with subpages. Crawled rows stay skipped.
+- **CLI flags**: `--crawl-mode {homepage,fixed,links,both}`, `--max-subpages N`, `--no-subpages`, `--rescan-homepage-only`.
+- **Backward compatible**: `promote_hints.py`, `enrich_all.py`, and dashboard all work unchanged. Pipeline defaults to `crawl_mode=both`.
+
+**Commits:**
+- `be16cd3` — feat: add subpage crawling to website keyword scanner
+
