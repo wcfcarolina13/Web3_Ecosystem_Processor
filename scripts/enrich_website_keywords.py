@@ -154,6 +154,97 @@ def normalize_url_for_fetch(url: str) -> str:
     return url
 
 
+# ── App store detection ─────────────────────────────────────────────────
+
+_GOOGLE_PLAY_RE = re.compile(
+    r'play\.google\.com/store/apps/details\?id=([a-zA-Z0-9._]+)'
+)
+_APPLE_STORE_RE = re.compile(r'apps\.apple\.com/.+/id(\d+)')
+
+# Meta tag patterns for extracting descriptions from SPA pages
+_META_DESC_RE = re.compile(
+    r'<meta\s+name=["\']description["\']\s+content=["\']([^"\']+)["\']',
+    re.IGNORECASE,
+)
+_META_OG_DESC_RE = re.compile(
+    r'<meta\s+property=["\']og:description["\']\s+content=["\']([^"\']+)["\']',
+    re.IGNORECASE,
+)
+
+
+def detect_app_store(url: str) -> Optional[Tuple[str, str]]:
+    """
+    Detect if URL is an app store listing.
+
+    Returns (store_type, app_id) or None.
+    store_type is "google_play" or "apple".
+    """
+    m = _GOOGLE_PLAY_RE.search(url)
+    if m:
+        return ("google_play", m.group(1))
+    m = _APPLE_STORE_RE.search(url)
+    if m:
+        return ("apple", m.group(1))
+    return None
+
+
+def fetch_apple_description(app_id: str) -> Optional[str]:
+    """
+    Fetch app description from Apple's iTunes Lookup API.
+
+    Uses the public endpoint: https://itunes.apple.com/lookup?id={app_id}
+    Returns the full description text, or None on failure.
+    """
+    api_url = f"https://itunes.apple.com/lookup?id={app_id}"
+    try:
+        req = urllib.request.Request(api_url, headers={"User-Agent": USER_AGENT})
+        with urllib.request.urlopen(req, timeout=REQUEST_TIMEOUT) as resp:
+            data = json.loads(resp.read().decode("utf-8", errors="replace"))
+            results = data.get("results", [])
+            if results:
+                return results[0].get("description", "")
+    except Exception as e:
+        print(f" [iTunes API error: {e}]", end="", flush=True)
+    return None
+
+
+def extract_google_play_description(html: str) -> Optional[str]:
+    """
+    Extract description from Google Play HTML meta tags.
+
+    Google Play is an SPA, but meta description and og:description tags
+    are present in the raw HTML with a truncated (~160 char) description.
+    """
+    # Try meta description first (usually more concise)
+    m = _META_OG_DESC_RE.search(html)
+    if m:
+        desc = html_unescape(m.group(1)).strip()
+        if len(desc) >= 20:
+            return desc
+
+    m = _META_DESC_RE.search(html)
+    if m:
+        desc = html_unescape(m.group(1)).strip()
+        if len(desc) >= 20:
+            return desc
+
+    # Try JSON-LD block if present
+    ld_match = re.search(
+        r'<script\s+type=["\']application/ld\+json["\']\s*>(.*?)</script>',
+        html, re.DOTALL | re.IGNORECASE,
+    )
+    if ld_match:
+        try:
+            ld_data = json.loads(ld_match.group(1))
+            desc = ld_data.get("description", "")
+            if len(desc) >= 20:
+                return desc
+        except (json.JSONDecodeError, AttributeError):
+            pass
+
+    return None
+
+
 # ── Link extraction ─────────────────────────────────────────────────────
 
 # Static asset extensions to skip when extracting links
@@ -304,6 +395,28 @@ def crawl_site(
         aggregated_text is None if even the homepage fails.
     """
     homepage_url = normalize_url_for_fetch(homepage_url)
+
+    # ── App store special handling ──
+    # App store URLs get description-specific extraction; no subpage crawling.
+    store_info = detect_app_store(homepage_url)
+    if store_info:
+        store_type, app_id = store_info
+        if store_type == "apple":
+            desc = fetch_apple_description(app_id)
+            if desc:
+                return desc.lower(), 1, 0
+        elif store_type == "google_play":
+            html = fetch_html(homepage_url)
+            if html:
+                desc = extract_google_play_description(html)
+                if desc:
+                    return desc.lower(), 1, 0
+                # Google Play is an SPA — raw html_to_text produces only
+                # CSS/JS noise (400K+ chars), so we skip the fallback.
+                # The page has zero useful content without JS execution.
+        return None, 0, 1  # App store fetch failed
+
+    # ── Normal website crawling ──
     pages_fetched = 0
     pages_failed = 0
     all_texts: List[str] = []
