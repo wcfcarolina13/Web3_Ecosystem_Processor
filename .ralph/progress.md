@@ -233,3 +233,17 @@ This is how Ralph maintains continuity across iterations.
 **Commits:**
 - `be16cd3` — feat: add subpage crawling to website keyword scanner
 
+### Session 15 — 2026-02-13 (Manual)
+
+**Accomplished:**
+- **App store description extraction** (`enrich_website_keywords.py`): Extended `crawl_site()` to detect Google Play and Apple App Store URLs and extract descriptions via store-specific methods.
+  - Apple App Store: Uses iTunes Lookup API (`itunes.apple.com/lookup?id=`) — returns JSON with full description, no scraping needed.
+  - Google Play: Extracts `og:description` / `meta description` / JSON-LD from raw HTML. SPA fallback disabled — Google Play returns pure JS shell with no content.
+  - App store URLs skip subpage crawling entirely (no `/about` paths on app stores).
+- **New functions**: `detect_app_store()`, `fetch_apple_description()`, `extract_google_play_description()`
+- **Key finding**: Google Play is a pure SPA — `html_to_text()` produces 437K chars of CSS/JS noise. Meta tags are also absent on current Play Store pages. Apple's iTunes API is the reliable path for Apple App Store.
+- **Tested on Tezos** (2 Google Play URLs): Cricket Stars and Auto Hero correctly detected as app store URLs, handled cleanly.
+
+**Commits:**
+- `457ec50` — feat: add app store description extraction to website scanner
+
